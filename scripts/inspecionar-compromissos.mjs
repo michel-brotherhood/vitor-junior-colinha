@@ -1,30 +1,37 @@
 #!/usr/bin/env node
-// Só leitura: baixa a página dos 12 compromissos e mostra o que ela entrega (HTML, texto, JSON embutido, imagens).
-// Uso: node scripts/inspecionar-compromissos.mjs [url]
-const URL_PAG = process.argv[2] || 'https://deputadovitorjunior.com.br/12-compromissos';
-const r = await fetch(URL_PAG, { headers: { 'User-Agent': 'Mozilla/5.0 (colinha-diagnostico)', 'Accept-Language': 'pt-BR' }, redirect: 'follow', signal: AbortSignal.timeout(60000) });
-const html = await r.text();
-console.log('GET', r.status, r.headers.get('content-type'), 'bytes:', html.length, 'url final:', r.url);
-console.log('title:', (html.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1]?.trim());
-console.log('\n--- meta og/description');
-for (const m of html.matchAll(/<meta[^>]+(?:property|name)=["'](og:[^"']+|description)["'][^>]*>/gi)) console.log(m[0].slice(0, 300));
+// Só leitura: a página é um app (Vite/React), então o HTML vem vazio; o texto está nos pacotes JS.
+// Baixa o HTML, o pacote principal e os "chunks" carregados sob demanda, e mostra os trechos que falam de "compromisso".
+const BASE = 'https://deputadovitorjunior.com.br';
+const UA = { 'User-Agent': 'Mozilla/5.0 (colinha-diagnostico)', 'Accept-Language': 'pt-BR' };
+const get = async (u, tipo = 'text') => { const r = await fetch(u, { headers: UA, redirect: 'follow', signal: AbortSignal.timeout(60000) }); if (!r.ok) throw new Error(`HTTP ${r.status} ${u}`); return tipo === 'buf' ? Buffer.from(await r.arrayBuffer()) : r.text(); };
 
-// Texto visível aproximado (sem script/style)
-const limpo = html.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ').replace(/<!--[\s\S]*?-->/g, ' ');
-const texto = limpo.replace(/<\/(p|div|h[1-6]|li|section|article|br|tr)>/gi, '\n').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#0?39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/[ \t]+/g, ' ').replace(/\n\s*\n+/g, '\n').trim();
-console.log('\n--- TEXTO VISÍVEL (primeiros 9000 caracteres) ---');
-console.log(texto.slice(0, 9000));
+const html = await get(BASE + '/12-compromissos');
+const main = [...html.matchAll(/(?:src|href)=["'](\/assets\/[^"']+\.js)["']/g)].map(m => m[1]);
+console.log('HTML:', html.length, 'bytes; scripts /assets:', main.join(', '));
 
-console.log('\n--- títulos h1-h4');
-for (const m of limpo.matchAll(/<h([1-4])[^>]*>([\s\S]*?)<\/h\1>/gi)) console.log(`h${m[1]}:`, m[2].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+const vistos = new Map();
+async function baixar(caminho) {
+  if (vistos.has(caminho)) return vistos.get(caminho);
+  let txt = ''; try { txt = await get(BASE + caminho); } catch (e) { console.log('!!', String(e.message)); }
+  vistos.set(caminho, txt); return txt;
+}
+const fila = [...main];
+while (fila.length && vistos.size < 60) {
+  const c = fila.shift(); const js = await baixar(c);
+  // chunks dinâmicos: import("./Nome-hash.js") ou "assets/Nome-hash.js" dentro do mapa de dependências do Vite
+  for (const m of js.matchAll(/["'`]\.?\/?(?:assets\/)?([A-Za-z0-9_.-]+-[A-Za-z0-9_-]{6,}\.js)["'`]/g)) {
+    const alvo = '/assets/' + m[1]; if (!vistos.has(alvo) && !fila.includes(alvo)) fila.push(alvo);
+  }
+}
+console.log('\nPacotes lidos:', [...vistos.entries()].map(([k, v]) => `${k} (${v.length})`).join('\n  '));
 
-console.log('\n--- imagens (src) e svgs');
-const imgs = [...html.matchAll(/<img[^>]+(?:src|data-src)=["']([^"']+)["'][^>]*>/gi)].map(m => m[1]);
-console.log(imgs.slice(0, 60).join('\n'), '\n(total img:', imgs.length, ', svg inline:', (html.match(/<svg/gi) || []).length, ')');
-
-console.log('\n--- dados embutidos (__NEXT_DATA__, JSON-LD, window.__)');
-const nd = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
-if (nd) console.log('__NEXT_DATA__:', nd[1].slice(0, 6000));
-for (const m of html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)) console.log('JSON-LD:', m[1].slice(0, 1500));
-console.log('scripts externos:', [...html.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)].map(m => m[1]).slice(0, 15).join(' | '));
-console.log('links internos:', [...new Set([...html.matchAll(/href=["'](\/[^"'#]*)["']/g)].map(m => m[1]))].slice(0, 40).join(' | '));
+const re = /compromiss/gi;
+for (const [nome, js] of vistos) {
+  const n = (js.match(re) || []).length; if (!n) continue;
+  console.log(`\n===== ${nome}: ${n} ocorrências de "compromiss" =====`);
+  let ultimo = -1e9, mostrados = 0;
+  for (const m of js.matchAll(re)) {
+    if (m.index - ultimo < 1500 || mostrados >= 6) continue; ultimo = m.index; mostrados++;
+    console.log(`--- @${m.index}\n` + js.slice(Math.max(0, m.index - 400), m.index + 2600).replace(/\s+/g, ' '));
+  }
+}
