@@ -42,6 +42,10 @@ jobs:
         run: node scripts/inspecionar-zip-tse.mjs
         continue-on-error: true
 
+      - name: Diagnóstico da API oficial DivulgaCandContas (somente leitura)
+        run: node scripts/diagnostico-tse-api.mjs
+        continue-on-error: true
+
       - name: Testes do importador
         run: |
           npm ci
