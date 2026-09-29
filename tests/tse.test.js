@@ -68,3 +68,19 @@ describe('registros fixos', () => {
     expect(d['RJ/6'].candidatos[0]).toMatchObject({ id: 9, nomeUrna: 'NOME DA FONTE', descricaoSituacao: 'Deferido', foto: 'public/img/vitor-junior.jpg' });
   });
 });
+
+import { readFileSync } from 'node:fs';
+import { listarZip, lerEntrada } from '../scripts/lib/zip.mjs';
+
+describe('leitor de zip', () => {
+  const buf = readFileSync(new URL('./fixtures/sintetico.zip', import.meta.url));
+  it('lista e lê entradas deflate e stored', () => {
+    const itens = listarZip(buf);
+    expect(itens.map(i => i.nome).sort()).toEqual(['a.csv', 'b.txt']);
+    expect(lerEntrada(buf, itens.find(i => i.nome === 'a.csv')).toString()).toBe('"COL";"X"\r\n"1";"2"\r\n');
+    expect(lerEntrada(buf, itens.find(i => i.nome === 'b.txt')).toString()).toBe('texto sem compressao');
+  });
+  it('rejeita arquivo que não é zip', () => {
+    expect(() => listarZip(Buffer.from('isto não é um zip, é só texto comprido o bastante para a busca'))).toThrow(/inválido/);
+  });
+});

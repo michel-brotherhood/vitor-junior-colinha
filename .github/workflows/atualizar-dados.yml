@@ -41,7 +41,11 @@ jobs:
       - name: Inspecionar o zip oficial do TSE (somente leitura)
         run: |
           curl -sSL -A "Mozilla/5.0 (colinha-diagnostico)" -o /tmp/cand2026.zip https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_cand/consulta_cand_2026.zip
-          ls -l /tmp/cand2026.zip
+          ls -l /tmp/cand2026.zip; file /tmp/cand2026.zip
+          echo "--- primeiros 700 bytes da resposta:"; head -c 700 /tmp/cand2026.zip; echo
+          echo "--- cabeçalhos do GET:"; curl -sSI -A "Mozilla/5.0 (colinha-diagnostico)" https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_cand/consulta_cand_2026.zip | head -20
+          echo "--- GET com Node (fetch):"
+          node -e "fetch('https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_cand/consulta_cand_2026.zip').then(async r=>{const b=Buffer.from(await r.arrayBuffer());console.log(r.status,r.headers.get('content-type'),b.length,b.subarray(0,4).toString('hex'))})"
           echo "--- conteúdo do zip"; unzip -l /tmp/cand2026.zip
           echo "--- cabeçalho e 2 linhas do CSV do RJ"
           unzip -p /tmp/cand2026.zip consulta_cand_2026_RJ.csv | iconv -f latin1 -t utf8 | head -3
