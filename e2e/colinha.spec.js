@@ -252,11 +252,11 @@ test.describe('com fixture sintética de teste', () => {
     await inp(page, 'de').fill('99020');
     await inp(page, 's1').fill('901');
     await page.locator('#tabCause').click();
-    await page.getByRole('button', { name: 'Saúde' }).click();
+    await page.getByRole('button', { name: '3. Super Centros de Saúde' }).click();
     await page.locator('#link').click();
     await expect(page.locator('#toast')).toHaveText('Link copiado.');
     const url = await page.evaluate(() => navigator.clipboard.readText());
-    expect(url).toBe(`${baseURL}/?v=1200-99020-901---&f=saude`);
+    expect(url).toBe(`${baseURL}/?v=1200-99020-901---&f=c03`);
     const ctx2 = await browser.newContext();
     const p2 = await ctx2.newPage();
     await withFixture(p2);
@@ -266,7 +266,7 @@ test.describe('com fixture sintética de teste', () => {
     await expect(p2.locator('#slot-de .nu')).toHaveText('TESTE JOSÉ');
     await expect(p2.locator('#slot-s1 .nu')).toHaveText('TESTE SENADOR');
     await expect(inp(p2, 'df')).toHaveValue('1200');
-    await expect(p2.locator('#phrase')).toHaveText('Para defender a Saúde, meu time é esse:');
+    await expect(p2.locator('#phrase')).toHaveText('Compromisso 3: Super Centros de Saúde. Esse é o meu time:');
     await expect(p2.locator('#tabCause')).toHaveAttribute('aria-pressed', 'true');
     await ctx2.close();
   });
@@ -287,34 +287,42 @@ test.describe('com fixture sintética de teste', () => {
 
 test.describe('fundos', () => {
   test.beforeEach(async ({ page }) => { await withFixture(page); await page.goto('/'); await ready(page); });
-  const jogos = [['RPG', 'RPG'], ['RTS', 'RTS'], ['FPS', 'FPS'], ['Luta', 'luta'], ['Corrida', 'corrida'], ['Plataforma', 'plataforma'], ['Puzzle', 'puzzle'], ['MOBA', 'MOBA']];
-  const causas = [['Educação', 'a Educação'], ['Ciência', 'a Ciência'], ['Saúde', 'a Saúde'], ['Segurança', 'a Segurança'], ['Cultura', 'a Cultura'], ['Meio Ambiente', 'o Meio Ambiente'], ['Esporte', 'o Esporte'], ['Tecnologia', 'a Tecnologia']];
+  const compromissos = [
+    'Integração no transporte', 'Mais recursos para a mobilidade', 'Super Centros de Saúde', 'Inclusão e famílias atípicas',
+    'Proteção à infância e à adolescência', 'Educação em tempo integral', 'Universidade para Todos', 'Qualificação para o trabalho',
+    'Incentivos para quem produz', 'Rio de portas abertas para investimento', 'Pacto Fiscal', 'Segurança Integrada'
+  ];
 
-  test('as 17 opções: seleção, frase e prévia mudam; Pro Rio (Vitor) inicial marcado', async ({ page }) => {
+  test('13 fundos (Campanha + 12 compromissos): seleção, frase e prévia mudam; sem "Estilo de jogo"', async ({ page }) => {
+    await expect(page.getByText('Estilo de jogo')).toHaveCount(0);
+    await expect(page.locator('.toggle button')).toHaveText(['Campanha', 'Causa']);
     await expect(page.getByRole('button', { name: 'Pro Rio', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('#bgs .bg')).toHaveCount(1);
     const seen = new Set();
     const shot = async () => { await page.waitForTimeout(200); return page.evaluate(() => { const u = document.querySelector('#out').toDataURL(); return u.length + ':' + u.slice(-200); }); };
     seen.add(await shot());
-    await page.locator('#tabGame').click();
-    await expect(page.locator('#bgs .bg')).toHaveCount(8);
-    for (const [label, frase] of jogos) {
-      await page.getByRole('button', { name: label, exact: true }).click();
-      await expect(page.getByRole('button', { name: label, exact: true })).toHaveAttribute('aria-pressed', 'true');
-      await expect(page.locator('#phrase')).toHaveText(`Sou fã de ${frase} e vou entrar no jogo com esse time:`);
-      seen.add(await shot());
-    }
     await page.locator('#tabCause').click();
-    await expect(page.locator('#bgs .bg')).toHaveCount(8);
-    for (const [label, frase] of causas) {
-      await page.getByRole('button', { name: label, exact: true }).click();
-      await expect(page.getByRole('button', { name: label, exact: true })).toHaveAttribute('aria-pressed', 'true');
-      await expect(page.locator('#phrase')).toHaveText(`Para defender ${frase}, meu time é esse:`);
+    await expect(page.locator('#bgs .bg')).toHaveCount(12);
+    for (const [i, titulo] of compromissos.entries()) {
+      const btn = page.locator('#bgs .bg').nth(i);
+      await expect(btn).toContainText(`${i + 1}. ${titulo}`);
+      await btn.click();
+      await expect(btn).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.locator('#phrase')).toHaveText(`Compromisso ${i + 1}: ${titulo}. Esse é o meu time:`);
       seen.add(await shot());
     }
-    expect(seen.size).toBe(17); // cada fundo gera uma imagem distinta
+    expect(seen.size).toBe(13); // cada fundo gera uma imagem distinta
     await page.locator('#tabCampaign').click();
     await expect(page.locator('#bgs .bg')).toHaveCount(1);
+  });
+
+  test('miniaturas dos compromissos não estouram a largura (390 px)', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator('#tabCause').click();
+    const sobra = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(sobra).toBeLessThanOrEqual(0);
+    const cortados = await page.evaluate(() => [...document.querySelectorAll('#bgs .bg span')].filter(s => s.scrollWidth > s.clientWidth + 1).length);
+    expect(cortados).toBe(0);
   });
 
   test('fundo da campanha carrega a imagem laranja e o link ?f=vitor abre nele', async ({ page }) => {
@@ -325,10 +333,14 @@ test.describe('fundos', () => {
     await page.goto('/?f=vitor');
     await ready(page);
     await expect(page.locator('#tabCampaign')).toHaveAttribute('aria-pressed', 'true');
-    await page.goto('/?f=rpg');
+    await page.goto('/?f=c11');
     await ready(page);
-    await expect(page.locator('#tabGame')).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.getByRole('button', { name: 'RPG', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#tabCause')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#phrase')).toHaveText('Compromisso 11: Pacto Fiscal. Esse é o meu time:');
+    await page.goto('/?f=rpg'); // link antigo (estilo de jogo removido) volta ao padrão
+    await ready(page);
+    await expect(page.locator('#tabCampaign')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#phrase')).toHaveText('Pro Rio voltar a funcionar! Esse é o meu time:');
   });
 });
 

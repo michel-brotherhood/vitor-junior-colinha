@@ -98,7 +98,7 @@ input[type=search]::-webkit-search-cancel-button,input[type=search]::-webkit-sea
 .bgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
 .bg{border:2px solid transparent;border-radius:10px;background:var(--bg);padding:0;cursor:pointer;overflow:hidden;display:flex;flex-direction:column}
 .bg canvas{width:100%;aspect-ratio:9/16;display:block;max-width:100%}
-.bg span{font:700 14px/1 var(--sans);padding:8px 6px;text-align:center;letter-spacing:.04em}
+.bg span{font:700 14px/1.15 var(--sans);padding:8px 6px;text-align:center;letter-spacing:.02em;min-height:3.9em;display:flex;align-items:center;justify-content:center;overflow-wrap:anywhere}
 .bg[aria-pressed=true]{border-color:var(--accent)}
 .bg[aria-pressed=true] span{color:var(--accent)}
 .phrase{margin-top:14px;padding:12px 14px;border-left:3px solid var(--accent);background:var(--bg);border-radius:0 10px 10px 0;font:700 19px/1.25 var(--sans)}
@@ -145,7 +145,7 @@ footer.foot{margin-top:28px;padding-top:18px;border-top:1px solid var(--line);co
 
 /* fundo único (aba Campanha): miniatura maior e centralizada */
 .bgs.single{grid-template-columns:minmax(120px,168px);justify-content:center}
-.bgs.single .bg span{font-size:15px;padding:10px 6px}
+.bgs.single .bg span{font-size:15px;padding:10px 6px;min-height:0}
 
 /* barra fixa de ações (só no celular, enquanto a prévia não está na tela) */
 .dock{display:none}

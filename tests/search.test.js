@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { norm, rank, status, buildList, suggest, resolveRaw, parseParams, buildQuery, sanitizeVoto } from '../src/search.js';
-import { SLOTS, phraseText } from '../src/cargos.js';
+import { SLOTS, CAUSES, phraseText } from '../src/cargos.js';
+import { COMPROMISSOS } from '../src/compromissos.js';
 
 const fx = JSON.parse(readFileSync(new URL('./fixtures/candidatos-teste.json', import.meta.url), 'utf8'));
 const df = buildList(fx['RJ/6'], 'RJ');
@@ -111,7 +112,7 @@ describe('resolveRaw', () => {
 
 describe('link', () => {
   it('parseParams valida fundo e votos', () => {
-    expect(parseParams('?f=moba&v=1200-99020-123-456-13-22')).toEqual({ bg: 'moba', votos: ['1200', '99020', '123', '456', '13', '22'] });
+    expect(parseParams('?f=c08&v=1200-99020-123-456-13-22')).toEqual({ bg: 'c08', votos: ['1200', '99020', '123', '456', '13', '22'] });
     expect(parseParams('?f=vitor').bg).toBe('vitor');
     expect(parseParams('?f=__proto__').bg).toBeNull();
     expect(parseParams('?f=constructor').bg).toBeNull();
@@ -129,18 +130,30 @@ describe('link', () => {
     expect(sanitizeVoto('12345', SLOTS[1])).toBe('12345');
   });
   it('buildQuery não vaza texto digitado e é reversível', () => {
-    const q = buildQuery(['1234', 'axel', '', '', '13', '22'], 'saude');
+    const q = buildQuery(['1234', 'axel', '', '', '13', '22'], 'c03');
     expect(q.get('v')).toBe('1234----13-22');
     expect(parseParams('?' + q).votos).toEqual(['1234', '', '', '', '13', '22']);
-    expect(parseParams('?' + q).bg).toBe('saude');
+    expect(parseParams('?' + q).bg).toBe('c03');
   });
 });
 
 describe('frase do fundo', () => {
-  it('jogo e causa', () => {
-    expect(phraseText('rpg')).toBe('Sou fã de RPG e vou entrar no jogo com esse time:');
-    expect(phraseText('luta')).toBe('Sou fã de luta e vou entrar no jogo com esse time:');
-    expect(phraseText('ambiente')).toBe('Para defender o Meio Ambiente, meu time é esse:');
+  it('campanha e compromissos', () => {
+    expect(phraseText('vitor')).toBe('Pro Rio voltar a funcionar! Esse é o meu time:');
+    expect(phraseText('c01')).toBe('Compromisso 1: Integração no transporte. Esse é o meu time:');
+    expect(phraseText('c12')).toBe('Compromisso 12: Segurança Integrada. Esse é o meu time:');
+  });
+  it('12 compromissos, ids únicos, e o módulo espelha data/compromissos.json', () => {
+    const json = JSON.parse(readFileSync(new URL('../data/compromissos.json', import.meta.url), 'utf8')).compromissos;
+    expect(COMPROMISSOS).toHaveLength(12);
+    expect(new Set(COMPROMISSOS.map(c => c.id)).size).toBe(12);
+    expect(COMPROMISSOS).toEqual(json.map(c => ({ n: c.n, id: c.id, slug: c.slug, frente: c.frente, titulo: c.titulo, texto: c.texto })));
+    expect(CAUSES).toHaveLength(12);
+  });
+  it('?f= aceita só os fundos existentes; ids antigos (jogos/causas) são ignorados', () => {
+    expect(parseParams('?f=c07').bg).toBe('c07');
+    expect(parseParams('?f=vitor').bg).toBe('vitor');
+    for (const antigo of ['rpg', 'luta', 'saude', 'ambiente', 'c13', '<x>']) expect(parseParams('?f=' + antigo).bg).toBeNull(); // main.js usa 'vitor' quando null
   });
 });
 
