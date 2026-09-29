@@ -84,3 +84,46 @@ describe('leitor de zip', () => {
     expect(() => listarZip(Buffer.from('isto não é um zip, é só texto comprido o bastante para a busca'))).toThrow(/inválido/);
   });
 });
+
+import { dadosDeZipTse, juntarSituacao, validarVolume, limpo, MINIMOS, CHAVES } from '../scripts/lib/tse.mjs';
+
+describe('zip oficial do TSE (fixture SINTÉTICA no layout real: latin1, ";", 13 das 50 colunas)', () => {
+  const buf = readFileSync(new URL('./fixtures/consulta-sintetico.zip', import.meta.url));
+  const { dados, geradoEm } = dadosDeZipTse(buf, { listarZip, lerEntrada });
+  it('separa RJ (3,5,6,7) e presidente; ignora suplentes, vices e outras UFs', () => {
+    expect(dados['RJ/6'].candidatos.map(c => c.id)).toEqual([1001, 1002]);
+    expect(dados['RJ/7'].candidatos.map(c => c.numero)).toEqual(['99010']);
+    expect(dados['RJ/5'].candidatos).toHaveLength(1);
+    expect(dados['RJ/3'].candidatos).toHaveLength(1);
+    expect(dados['BR/1'].candidatos.map(c => c.nomeUrna)).toEqual(['TESTE PRES']);
+  });
+  it('decodifica latin1 e usa NM_CANDIDATO como nome completo', () => {
+    const c = dados['RJ/6'].candidatos[1];
+    expect(c.nomeUrna).toBe('TESTE JOSÉ');
+    expect(c.nomeCompleto).toBe('JOSÉ TESTE HOMÔNIMO');
+  });
+  it('marcadores "#NE", "#NULO" e "NÃO DIVULGÁVEL" viram vazio (nunca chegam ao app)', () => {
+    for (const k of CHAVES) for (const c of dados[k].candidatos) { expect(c.descricaoSituacao).toBe(''); expect(c.nomeColigacao).not.toMatch(/^#/); }
+    expect(limpo('#NE')).toBe(''); expect(limpo('NÃO DIVULGÁVEL')).toBe(''); expect(limpo('-4')).toBe(''); expect(limpo(' DEFERIDO ')).toBe('DEFERIDO');
+  });
+  it('registra a data de geração do arquivo', () => { expect(geradoEm).toBe('28/09/2026 19:31:25'); });
+  it('erra com mensagem clara se faltar um arquivo', () => {
+    expect(() => dadosDeZipTse(buf, { listarZip, lerEntrada, ufs: ['ZZ'] })).toThrow(/consulta_cand_2026_ZZ\.csv não encontrado/);
+  });
+  it('volume: fixture pequena reprova o piso; base "cheia" passa', () => {
+    expect(validarVolume(dados).length).toBe(CHAVES.length);
+    const cheia = Object.fromEntries(CHAVES.map(k => [k, { candidatos: Array.from({ length: MINIMOS[k] }, (_, i) => ({ id: i })) }]));
+    expect(validarVolume(cheia)).toEqual([]);
+  });
+});
+
+describe('situação vinda de outra fonte (cruzada por SQ)', () => {
+  const base = () => ({ ...Object.fromEntries(CHAVES.map(k => [k, { candidatos: [] }])), 'RJ/6': { candidatos: [
+    { id: 1, numero: '1', descricaoSituacao: '' }, { id: 2, numero: '2', descricaoSituacao: 'JÁ VEIO' }, { id: 3, numero: '3', descricaoSituacao: '' }] } });
+  it('preenche vazios, respeita o que já existe e conta divergências', () => {
+    const d = base();
+    const st = juntarSituacao(d, [{ id: 1, descricaoSituacao: 'DEFERIDO' }, { id: 2, descricaoSituacao: 'INDEFERIDO' }, { id: 99, descricaoSituacao: 'DEFERIDO' }]);
+    expect(d['RJ/6'].candidatos.map(c => c.descricaoSituacao)).toEqual(['DEFERIDO', 'JÁ VEIO', '']);
+    expect(st).toEqual({ juntados: 1, semSituacao: 1, soNaFonteExtra: 1 });
+  });
+});
