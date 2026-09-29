@@ -1,0 +1,15 @@
+{
+  "_meta": { "completo": true, "fonte": "FIXTURE SINTÉTICA DE TESTE — nomes e números fictícios, não são candidaturas reais nem dados do TSE", "geradoEm": "2000-01-01T00:00:00Z" },
+  "RJ/6": { "candidatos": [
+    { "id": 1, "numero": "9901", "nomeUrna": "TESTE ALFA", "nomeCompleto": "TESTE ALFA DA SILVA", "partido": { "sigla": "XX" }, "descricaoSituacao": "Deferido" },
+    { "id": 2, "numero": "9902", "nomeUrna": "TESTE JOSÉ", "nomeCompleto": "TESTE JOSÉ HOMÔNIMO", "partido": { "sigla": "XX" }, "descricaoSituacao": "Deferido" },
+    { "id": 3, "numero": "9903", "nomeUrna": "TESTE JOSE", "nomeCompleto": "TESTE JOSE OUTRO", "partido": { "sigla": "XX" }, "descricaoSituacao": "Indeferido com recurso" },
+    { "id": 4, "numero": "9901", "nomeUrna": "TESTE ALFA", "nomeCompleto": "TESTE ALFA DA SILVA", "partido": { "sigla": "XX" }, "descricaoSituacao": "Indeferido" },
+    { "id": 5, "numero": "8801", "nomeUrna": "TESTE BETA", "nomeCompleto": "TESTE BETA", "partido": { "sigla": "YY" }, "descricaoSituacao": "Renúncia" }
+  ] },
+  "RJ/5": { "candidatos": [
+    { "id": 10, "numero": "901", "nomeUrna": "TESTE SENADOR", "nomeCompleto": "TESTE SENADOR UM", "partido": { "sigla": "XX" }, "descricaoSituacao": "Deferido" },
+    { "id": 11, "numero": "902", "nomeUrna": "TESTE SENADORA", "nomeCompleto": "TESTE SENADORA DOIS", "partido": { "sigla": "XX" }, "descricaoSituacao": "Pendente de julgamento" }
+  ] },
+  "BR/1": { "candidatos": [] }
+}

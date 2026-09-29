@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "completo": false,
+    "fonte": "Registro único extraído do HTML de referência enviado pelo usuário (Meu_Time_na_Urna.html). NÃO é uma base do TSE.",
+    "geradoEm": null,
+    "observacao": "Rode `npm run atualizar-dados` com acesso ao TSE para substituir este arquivo pela base completa."
+  },
+  "RJ/7": {
+    "candidatos": [
+      {
+        "id": 190002543312,
+        "numero": "65021",
+        "nomeUrna": "MÁRCIO FILHO",
+        "nomeCompleto": "MÁRCIO ROBERTO CARVALHO MATHEUS FILHO",
+        "partido": { "sigla": "PCDOB" },
+        "nomeColigacao": "",
+        "descricaoSituacao": "Deferido"
+      }
+    ]
+  },
+  "RJ/6": { "candidatos": [] },
+  "RJ/5": { "candidatos": [] },
+  "RJ/3": { "candidatos": [] },
+  "BR/1": { "candidatos": [] }
+}

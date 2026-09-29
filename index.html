@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Meu Time na Urna</title>
+<meta name="description" content="Monte sua colinha para as Eleições 2026 e compartilhe com os amigos.">
+<meta property="og:title" content="Meu Time na Urna · Eleições 2026">
+<meta property="og:description" content="Monte sua colinha, escolha um fundo e compartilhe.">
+<meta name="theme-color" content="#121122">
+<link rel="preload" href="public/fonts/rajdhani-700.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="public/styles.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">Meu Time <b>na Urna</b></div>
+    <div class="date">1º turno · 4 de outubro de 2026</div>
+  </header>
+
+  <section class="hero">
+    <h1>Monte sua colinha e <em>entre no jogo</em> com o seu time.</h1>
+    <p>Digite o número ou o nome de cada candidatura ao Rio de Janeiro e à Presidência, e confira na hora com os dados oficiais do TSE. Depois é só escolher um fundo e compartilhar.</p>
+  </section>
+
+  <div id="banner" class="banner" role="alert" hidden>
+    <span id="bannerMsg">Não foi possível carregar os dados dos candidatos.</span>
+    <button class="btn" id="retry" type="button">Tentar de novo</button>
+  </div>
+  <div id="aviso" class="banner warn" role="status" hidden><span id="avisoMsg"></span></div>
+  <div class="loading" id="carregando" style="margin-bottom:18px" role="status" hidden>Carregando candidaturas…</div>
+  <div id="live" class="sr-only" role="status" aria-live="polite"></div>
+  <noscript><p class="err">Este app precisa de JavaScript para funcionar.</p></noscript>
+
+  <div class="grid">
+    <main>
+      <section class="step" aria-labelledby="h1s">
+        <div class="step-h"><span class="step-n" aria-hidden="true">1</span><h2 id="h1s">Escale seu time</h2></div>
+        <p class="hint">Na ordem em que a urna pede. Digite o número ou comece a digitar o nome. Pode deixar em branco o que você ainda não decidiu.</p>
+        <div class="slots" id="slots"></div>
+      </section>
+
+      <section class="step" aria-labelledby="h2s">
+        <div class="step-h"><span class="step-n" aria-hidden="true">2</span><h2 id="h2s">Escolha o fundo</h2></div>
+        <div class="toggle" role="group" aria-label="Tipo de fundo">
+          <button type="button" id="tabGame" aria-pressed="true">Estilo de jogo</button>
+          <button type="button" id="tabCause" aria-pressed="false">Causa</button>
+        </div>
+        <div class="bgs" id="bgs" role="group" aria-label="Fundos disponíveis"></div>
+        <div class="phrase" id="phrase" aria-live="polite">Sou fã de RPG e vou entrar no jogo com esse time:</div>
+      </section>
+    </main>
+
+    <aside class="preview" aria-label="Prévia da colinha">
+      <div class="frame">
+        <canvas id="out" width="1080" height="1920" role="img" aria-label="Prévia da sua colinha"></canvas>
+        <div class="actions">
+          <button class="btn primary" id="share" type="button">Compartilhar colinha</button>
+          <button class="btn" id="dl" type="button">Baixar imagem</button>
+          <button class="btn" id="print" type="button">Imprimir</button>
+          <button class="btn" id="link" type="button" style="grid-column:1/-1">Copiar link desta colinha</button>
+        </div>
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+        <p class="tip">Celular não entra na cabine de votação. Leve a colinha impressa ou anotada no papel.</p>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="foot">
+    <span>Dados das candidaturas: TSE, DivulgaCandContas, atualizados periodicamente. Confira sempre a situação de cada candidatura.</span>
+    <span id="sig"></span>
+  </footer>
+</div>
+<img id="printImg" alt="Colinha para impressão" width="1080" height="1920">
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
