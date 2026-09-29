@@ -2,7 +2,7 @@
 
 Ferramenta para montar uma colinha eleitoral (1º turno, 4 de outubro de 2026): a pessoa informa candidaturas, escolhe um fundo e compartilha, baixa, imprime ou copia o link. O campo de **Deputado Federal** vem fixo em **Vitor Júnior · 1200 · PDT** (RJ). Estrutura e comportamento portados, em módulos ES, de um HTML de referência enviado pelo mantenedor; o site original **não** foi acessado.
 
-> **Estado dos dados: INCOMPLETO.** `data/candidatos.json` traz **apenas** o registro fixo do Vitor Júnior, montado a partir do material de campanha (nome de urna, número e partido). Não é uma base do TSE: **nome completo e situação da candidatura estão em branco** até uma importação real. Buscar outros números/nomes não encontra nada, e o app mostra um aviso permanente enquanto `_meta.completo` for `false`.
+> **Base de candidaturas: completa para o RJ + Presidência**, importada do arquivo oficial do TSE (`consulta_cand_2026.zip`, gerado em 28/09/2026 19:31) — 1.188 deputados estaduais, 793 federais, 17 senadores, 9 governadores e 14 presidentes. A **situação** (deferido, indeferido, etc.) vem do colinha.ai (site de terceiros), porque a coluna de situação do arquivo em massa do TSE vem como `#NE`. O aviso de "base incompleta" só aparece se `_meta.completo` for `false`.
 
 ## Rodar
 
@@ -31,35 +31,44 @@ Para publicar, copie `index.html`, `public/`, `src/` e `data/` para qualquer hos
 | `src/bgui.js`, `src/backgrounds.js` | Etapa 2: abas (Campanha, Estilo de jogo, Causa) e fundos em canvas |
 | `src/render.js` | Desenho da colinha 1080×1920 (mesma fonte para prévia, PNG, compartilhar e impressão) |
 | `src/actions.js` | Compartilhar, baixar, imprimir, copiar link |
-| `scripts/atualizar-dados.mjs`, `scripts/lib/tse.mjs` | Importador da base |
+| `scripts/atualizar-dados.mjs`, `scripts/lib/tse.mjs`, `scripts/lib/zip.mjs` | Importador (zip do TSE, leitor de zip sem dependências) |
+| `scripts/diagnostico-fontes.mjs`, `scripts/inspecionar-zip-tse.mjs` | Só leitura: mostram o que cada fonte responde |
+| `.github/workflows/atualizar-dados.yml` | Atualização da base fora do ambiente bloqueado |
+| `src/site.js` | Endereço do rodapé da imagem (ignora hosts de prévia/UUID) |
 | `data/fixos.json` | Registro fixo (1200) mesclado em toda importação |
 
 ## Dados
 
-**Formato** de `data/candidatos.json`:
+**Formato** de `data/candidatos.json` (gerado pelo importador):
 
 ```json
-{ "_meta": { "completo": true, "fonte": "…", "geradoEm": "ISO-8601" },
-  "RJ/6": { "candidatos": [ { "id": 1, "numero": "1200", "nomeUrna": "…", "nomeCompleto": "…",
-            "partido": { "sigla": "PDT" }, "nomeColigacao": "", "descricaoSituacao": "Deferido", "foto": "opcional" } ] },
+{ "_meta": { "completo": true, "fonte": "TSE, consulta_cand_2026.zip …", "tseGeradoEm": "28/09/2026 19:31:25",
+             "situacao": "colinha.ai", "situacaoAtualizadaEm": "…", "geradoEm": "ISO-8601" },
+  "RJ/6": { "candidatos": [ { "id": 190002539652, "numero": "1200", "nomeUrna": "VITOR JUNIOR",
+            "nomeCompleto": "JOSE VITOR VIEIRA BISSONHO JUNIOR", "partido": { "sigla": "PDT" },
+            "nomeColigacao": "PARTIDO ISOLADO", "descricaoSituacao": "DEFERIDO", "foto": "opcional" } ] },
   "RJ/7": {…}, "RJ/5": {…}, "RJ/3": {…}, "BR/1": {…} }
 ```
-Chaves = `UE/código do cargo TSE` (7 dep. estadual, 6 dep. federal, 5 senador, 3 governador, 1 presidente). `foto` é um caminho relativo opcional; sem ele, tenta `data/fotos/<id>.jpg`; sem foto, silhueta.
+Chaves = `UE/código do cargo TSE` (7 dep. estadual, 6 dep. federal, 5 senador, 3 governador, 1 presidente). `id` = `SQ_CANDIDATO` do TSE. Fotos em `data/fotos/<id>.jpg`; `foto` (opcional) aponta para um arquivo local e tem prioridade; sem foto, silhueta.
 
-**Importar a base** (numa máquina com acesso à fonte). Todos os modos mesclam `data/fixos.json`, validam o esquema e **não** alteram a base se algo falhar (`--dry-run` simula):
+**Atualizar a base** (recomendado: pelo GitHub Actions, que tem acesso de rede a essas fontes):
 
-```bash
-# a) TSE, Dados Abertos: baixe consulta_cand_2026_RJ.csv e o arquivo nacional, depois
-npm run atualizar-dados -- --csv consulta_cand_2026_RJ.csv --csv consulta_cand_2026_BRASIL.csv
-# b) TSE, DivulgaCandContas (rotas e id da eleição precisam ser conferidos por você)
-npm run atualizar-dados -- --api --eleicao <id> --fotos
-# c) colinha.ai: site de terceiros que republica os dados do TSE (contrato copiado do sync.php do zip recebido)
-npm run atualizar-dados -- --colinha-ai
-```
+- GitHub → *Actions* → **Atualizar dados** → *Run workflow* (marque **gravar** para fazer o commit). Roda também todo dia às 08:17 UTC. Só grava se os testes e a validação (mínimos por cargo, esquema, candidato fixo presente) passarem.
+- Localmente: `npm run atualizar-dados` (= `--tse-zip --fotos`). Outros modos: `--tse-zip --sem-situacao`, `--csv <arquivos>`, `--colinha-ai`, `--dry-run`, `--permitir-vazio`.
 
-**O que não foi verificado:** os hosts do TSE **e** `colinha.ai`/`assets.colinha.ai` responderam 403 no ambiente de desenvolvimento. Nenhuma das três rotas de importação foi executada contra dados reais: layout do CSV 2026, rotas da API e id de eleição `20322002026` (herdado da referência) seguem não conferidos, e o contrato do colinha.ai vem só da leitura do `sync.php`. Os parsers foram testados com dados sintéticos. Prefira os modos a/b (fonte oficial); o modo c depende de um terceiro.
+**O que foi verificado por execução** (GitHub Actions, 29/09/2026):
 
-O rodapé mantém o texto "atualizados periodicamente"; isso só é verdade se alguém rodar o importador periodicamente.
+| Fonte | Resultado |
+|---|---|
+| `cdn.tse.jus.br/.../consulta_cand_2026.zip` | 200 com `fetch` simples; `curl` recebe 403 (bloqueio por assinatura do cliente). Traz `consulta_cand_2026_<UF>.csv` (latin1, `;`, 50 colunas) |
+| Situação no CSV do TSE | `#NE` em todas as linhas → **não serve** para deferido/indeferido |
+| `colinha.ai/api/v1/candidatos` | 200, mesmos registros e mesmos totais do TSE (mesmo `SQ`); `julg` = situação; `fora` = "renuncia"/"inapto" |
+| `divulgacandcontas.tse.jus.br/.../eleicao/ordinarias` | 200 no diagnóstico simples, mas 403 na rota de listagem para clientes automáticos → não usado |
+| Fotos | `assets.colinha.ai/candidatos/fotos/2026/<SQ>.jpeg`, 200 (foto oficial de urna republicada) |
+
+O importador cruza pelo `SQ`, confere os totais entre as duas fontes e registra em `_meta` de onde veio cada informação. Se o colinha.ai falhar, a base sai **sem situação** (nunca com valor inventado). Situações vistas: DEFERIDO, DEFERIDO EM PRAZO RECURSAL OU COM RECURSO, INDEFERIDO EM PRAZO RECURSAL OU COM RECURSO, PENDENTE DE JULGAMENTO, inapto, renuncia.
+
+**Limites que continuam valendo:** a situação depende de um terceiro (colinha.ai) e muda até a eleição; as fotos são copiadas do mesmo terceiro (são as fotos oficiais de urna, mas confirme o direito de uso antes de redistribuir); o rodapé diz "atualizados periodicamente", o que só vale com o workflow diário ativo.
 
 ## Comportamento
 
@@ -82,11 +91,11 @@ O rodapé mantém o texto "atualizados periodicamente"; isso só é verdade se a
 ## Diferenças em relação ao HTML de referência
 
 - Fonte pixel Silkscreen (OFL) no lugar de `CutePixel.ttf` (licença não verificada); Rajdhani self-hosted.
-- Sem logos de partidos (pílula "NN · SIGLA"), sem rota `/tse` (`CONFIG.USAR_PROXY_TSE = false`).
+- Fotos oficiais de urna (2.020 candidaturas) e situações reais; sem logos de partidos (pílula "NN · SIGLA"), sem rota `/tse` (`CONFIG.USAR_PROXY_TSE = false`).
 - Aviso de base incompleta, ARIA combobox/listbox, região `aria-live`, `aria-label` descritivo no canvas.
 - Impressão a 9 cm em vez de 8 cm. Link saneado; retry de carregamento funcional; exportar/imprimir aguarda o desenho pendente.
 
 ## Pendências
 
-- Nome completo e situação no TSE do candidato (vêm da importação).
-- Acesso de rede à fonte de dados para rodar o importador.
+- Confirmar direito de uso das fotos de urna copiadas do colinha.ai.
+- Definir `CONFIG.SITE` (endereço final) antes do deploy; sem ele, a imagem omite a linha "Monte a sua".

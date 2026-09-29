@@ -14,8 +14,8 @@ async function withFixture(page) {
 const inp = (page, k) => page.locator('#in-' + k);
 const ready = page => expect(inp(page, 'de')).toBeEnabled();
 
-test.describe('base real mínima (data/candidatos.json)', () => {
-  test('estado inicial: só Vitor Júnior 1200, travado, com aviso de base incompleta', async ({ page }) => {
+test.describe('base real (data/candidatos.json, importada do TSE)', () => {
+  test('estado inicial: Vitor Júnior 1200 travado, com nome completo e situação oficiais', async ({ page }) => {
     await page.goto('/');
     await ready(page);
     const de = inp(page, 'df');
@@ -23,10 +23,10 @@ test.describe('base real mínima (data/candidatos.json)', () => {
     await expect(de).toBeDisabled();
     await expect(page.locator('#slot-df .clear')).toBeHidden();
     await expect(page.locator('#slot-df')).toContainText('VITOR JUNIOR');
-    await expect(page.locator('#slot-df .fu')).toHaveText('1200 · PDT'); // sem nome completo nem status inventados
-    await expect(page.locator('#slot-df .chip.ok, #slot-df .chip.warn, #slot-df .chip.bad')).toHaveCount(0);
+    await expect(page.locator('#slot-df .fu')).toHaveText('JOSE VITOR VIEIRA BISSONHO JUNIOR · 1200 · PDT');
+    await expect(page.locator('#slot-df .chip.ok')).toHaveText('Candidatura deferida');
     await expect(page.locator('#slot-df')).toContainText('Número fixo desta colinha');
-    await expect(page.locator('#aviso')).toBeVisible();
+    await expect(page.locator('#aviso')).toBeHidden(); // base completa: sem aviso
     await expect(page.locator('#sig')).toHaveText('Iniciativa de Vitor Júnior 1200 (PDT), candidato a deputado federal pelo RJ · CNPJ 68.441.810/0001-17');
     await expect(page.locator('footer .foot-logo')).toBeVisible();
     expect(await page.locator('footer .foot-logo').evaluate(i => i.complete && i.naturalWidth > 0)).toBe(true);
@@ -52,10 +52,87 @@ test.describe('base real mínima (data/candidatos.json)', () => {
   });
 
   test('busca sem resultado na base real', async ({ page }) => {
+    const usados = new Set(real['RJ/7'].candidatos.map(c => c.numero));
+    const livre = ['99999', '00001', '11111', '22222'].find(n => !usados.has(n));
     await page.goto('/');
     await ready(page);
-    await inp(page, 'de').fill('12345');
-    await expect(page.locator('#slot-de .err')).toHaveText('Nenhuma candidatura com o número 12345 para Deputado Estadual no Rio de Janeiro.');
+    await inp(page, 'de').fill(livre);
+    await expect(page.locator('#slot-de .err')).toHaveText(`Nenhuma candidatura com o número ${livre} para Deputado Estadual no Rio de Janeiro.`);
+  });
+
+  test('metadados da base: completa, com fonte e data', async () => {
+    expect(real._meta.completo).toBe(true);
+    expect(real._meta.fonte).toMatch(/TSE/);
+    expect(real._meta.tseGeradoEm).toMatch(/\d{2}\/\d{2}\/2026/);
+    const n = k => real[k].candidatos.length;
+    expect([n('RJ/7'), n('RJ/6'), n('RJ/5'), n('RJ/3'), n('BR/1')].every(v => v > 0)).toBe(true);
+  });
+
+  test('deputado estadual real: por número e por nome, com foto oficial', async ({ page }) => {
+    const c = real['RJ/7'].candidatos.find(x => x.descricaoSituacao === 'DEFERIDO');
+    await page.goto('/'); await ready(page);
+    await inp(page, 'de').fill(c.numero);
+    const card = page.locator('#slot-de .res');
+    await expect(card.locator('.nu')).toHaveText(c.nomeUrna);
+    await expect(card.locator('.fu')).toContainText(`${c.numero} · ${c.partido.sigla}`);
+    await expect(card.locator('.chip.ok')).toHaveText('Candidatura deferida');
+    await expect.poll(() => card.locator('img').evaluate(i => i.complete && i.naturalWidth > 0)).toBe(true);
+    // pelo nome (primeira palavra do nome de urna, sem acento e em minúsculas)
+    await page.locator('#slot-de .clear').click();
+    const palavra = c.nomeUrna.normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(' ').find(w => w.length >= 4) || c.nomeUrna;
+    await inp(page, 'de').fill(palavra.toLowerCase());
+    await expect(page.locator('#sugs-de [role=option]').first()).toBeVisible();
+  });
+
+  test('senadores, governador e presidente reais aparecem nas listas', async ({ page }) => {
+    await page.goto('/'); await ready(page);
+    for (const [slot, chave] of [['s1', 'RJ/5'], ['go', 'RJ/3'], ['pr', 'BR/1']]) {
+      const c = real[chave].candidatos.find(x => x.descricaoSituacao === 'DEFERIDO') || real[chave].candidatos[0];
+      await inp(page, slot).fill(c.numero);
+      await expect(page.locator(`#slot-${slot} .nu`), `${chave} ${c.numero}`).toHaveText(c.nomeUrna);
+      await page.locator(`#slot-${slot} .clear`).click();
+    }
+  });
+
+  test('situações reais: indeferido/inapto/renúncia viram aviso vermelho; deferido com recurso vira amarelo', async ({ page }) => {
+    await page.goto('/'); await ready(page);
+    const todos = [...real['RJ/7'].candidatos];
+    const acha = f => todos.find(f);
+    const casos = [
+      [acha(c => /^INDEFERIDO/.test(c.descricaoSituacao)), '.chip.bad', /indeferido/i],
+      [acha(c => c.descricaoSituacao === 'inapto'), '.chip.bad', /inapta/i],
+      [acha(c => c.descricaoSituacao === 'renuncia'), '.chip.bad', /Renunciou/],
+      [acha(c => /^DEFERIDO EM PRAZO/.test(c.descricaoSituacao)), '.chip.warn', /Deferida, com recurso/]
+    ];
+    for (const [c, seletor, texto] of casos) {
+      if (!c) continue; // o estado pode não existir numa base futura
+      await inp(page, 'de').fill(c.numero);
+      await expect(page.locator(`#slot-de ${seletor}`), `${c.nomeUrna} (${c.descricaoSituacao})`).toHaveText(texto);
+      await page.locator('#slot-de .clear').click();
+    }
+  });
+
+  test('voto de legenda com número de partido real', async ({ page }) => {
+    await page.goto('/'); await ready(page);
+    await inp(page, 'de').fill('12'); await inp(page, 's1').click();
+    await expect(page.locator('#slot-de .note')).toContainText('partido PDT (12)');
+  });
+
+  test('duas vagas de senador: candidato real repetido é bloqueado', async ({ page }) => {
+    const [a, b] = real['RJ/5'].candidatos.filter(x => x.descricaoSituacao === 'DEFERIDO');
+    await page.goto('/'); await ready(page);
+    await inp(page, 's1').fill(a.numero);
+    await inp(page, 's2').fill(a.numero);
+    await expect(page.locator('#slot-s2 .err')).toContainText('Você já escolheu essa candidatura na 1ª vaga');
+    await inp(page, 's2').fill(b.numero);
+    await expect(page.locator('#slot-s2 .nu')).toHaveText(b.nomeUrna);
+  });
+
+  test('a imagem exportada traz os candidatos reais escolhidos', async ({ page }) => {
+    const c = real['RJ/5'].candidatos.find(x => x.descricaoSituacao === 'DEFERIDO');
+    await page.goto('/?f=vitor'); await ready(page);
+    await inp(page, 's1').fill(c.numero);
+    await expect(page.locator('#out')).toHaveAttribute('aria-label', new RegExp(`Senador · 1ª vaga: ${c.nomeUrna.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}, número ${c.numero}`));
   });
 
   test('falha de carregamento: banner e "Tentar de novo"', async ({ page }) => {

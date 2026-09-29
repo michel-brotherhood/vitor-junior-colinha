@@ -36,7 +36,7 @@ describe('situação: textos reais do TSE/colinha.ai', () => {
   const casos = [
     ['DEFERIDO', 'ok', 0], ['DEFERIDO EM PRAZO RECURSAL OU COM RECURSO', 'warn', 1], ['PENDENTE DE JULGAMENTO', 'warn', 2],
     ['INDEFERIDO EM PRAZO RECURSAL OU COM RECURSO', 'bad', 3], ['INDEFERIDO COM RECURSO', 'bad', 3], ['INDEFERIDO', 'bad', 4],
-    ['CANCELADO', 'bad', 5], ['FALECIMENTO', 'bad', 5], ['RENÚNCIA', 'bad', 5], ['PEDIDO NÃO CONHECIDO', 'warn', 5]
+    ['CANCELADO', 'bad', 5], ['FALECIMENTO', 'bad', 5], ['RENÚNCIA', 'bad', 5], ['renuncia', 'bad', 5], ['inapto', 'bad', 5], ['PEDIDO NÃO CONHECIDO', 'warn', 5]
   ];
   for (const [txt, cls, r] of casos) it(`${txt} → ${cls}, rank ${r}`, () => { expect(status(txt).cls).toBe(cls); expect(rank(txt)).toBe(r); });
   it('INDEFERIDO com recurso nunca aparece como deferida', () => {
@@ -141,5 +141,25 @@ describe('frase do fundo', () => {
     expect(phraseText('rpg')).toBe('Sou fã de RPG e vou entrar no jogo com esse time:');
     expect(phraseText('luta')).toBe('Sou fã de luta e vou entrar no jogo com esse time:');
     expect(phraseText('ambiente')).toBe('Para defender o Meio Ambiente, meu time é esse:');
+  });
+});
+
+import { enderecoParaImagem } from '../src/site.js';
+describe('endereço impresso na imagem', () => {
+  it('CONFIG.SITE tem prioridade', () => { expect(enderecoParaImagem('vitorjunior.com.br/colinha', 'qualquer.host')).toBe('vitorjunior.com.br/colinha'); });
+  it('domínio normal é usado, sem www', () => { expect(enderecoParaImagem('', 'www.exemplo.com.br')).toBe('exemplo.com.br'); });
+  it('host de prévia (UUID), localhost e IP não são divulgados', () => {
+    expect(enderecoParaImagem('', 'd3394f2c-f815-4719-af8c-6655e952aaee.claudeusercontent.com')).toBeNull();
+    expect(enderecoParaImagem('', 'localhost:5173')).toBeNull();
+    expect(enderecoParaImagem('', '192.168.0.10')).toBeNull();
+    expect(enderecoParaImagem('', '')).toBeNull();
+    expect(enderecoParaImagem('', 'a'.repeat(40) + '.com')).toBeNull();
+  });
+});
+
+describe('estados vindos do campo `fora` do colinha.ai', () => {
+  it('inapto e renuncia aparecem como "fora da urna" na imagem', () => {
+    expect(status('inapto')).toMatchObject({ cls: 'bad', txt: 'Candidatura inapta', short: 'INAPTA' });
+    expect(status('renuncia')).toMatchObject({ cls: 'bad', short: 'RENUNCIOU' });
   });
 });

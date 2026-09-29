@@ -5,6 +5,7 @@ import { S, $ } from './state.js';
 import { status } from './search.js';
 import { photoURLs, logoURL } from './dataStore.js';
 import { drawBG, PAL, rr, carregarFundoVitor } from './backgrounds.js';
+import { enderecoParaImagem } from './site.js';
 
 const imgCache = new Map();
 // Aceita uma URL só (logo) ou uma lista de URLs para tentar em ordem (foto local · foto ao vivo).
@@ -116,12 +117,24 @@ export async function draw(token){
 
   // rodapé
   glass(M,footY,W-2*M,footH,18,.7);
-  c.fillStyle='#F7F7F7';c.font='700 30px Rajdhani,sans-serif';c.fillText('Celular não entra na cabine: leve impresso ou anotado.',M+30,footY+46);
-  const site = CONFIG.SITE || location.host;
-  c.fillStyle=acc2;c.font='400 30px CutePixel,monospace';c.fillText(`Monte a sua: ${site}`,M+30,footY+90);
-  // identificação do responsável e logo do partido (obrigatórios em material de campanha)
+  const fx=M+30;
+  // logo do partido à direita; todo texto do rodapé fica à esquerda dele, com folga
+  let logoW=0;
+  if(logoRodape){const lh=54;logoW=lh*logoRodape.width/logoRodape.height;c.drawImage(logoRodape,W-M-30-logoW,footY+(footH-lh)/2,logoW,lh);}
+  const maxW=W-2*M-60-(logoW?logoW+24:0);
+  const site=enderecoParaImagem(CONFIG.SITE,location.host);
+  const linhas=site?[46,92,138]:[58,112];
+  c.textBaseline='alphabetic';
+  c.fillStyle='#F7F7F7';c.font='700 30px Rajdhani,sans-serif';
+  c.fillText(ellipsize(c,'Celular não entra na cabine: leve impresso ou anotado.',W-2*M-60),fx,footY+linhas[0]);
+  if(site){
+    const txt=`Monte a sua: ${site}`;
+    fitFont(c,txt,400,'CutePixel,monospace',maxW,30,20);
+    c.fillStyle=acc2;c.fillText(ellipsize(c,txt,maxW),fx,footY+linhas[1]);
+  }
+  // identificação do responsável (obrigatória em material de campanha)
   c.fillStyle='rgba(247,247,247,.86)';c.font='600 30px Rajdhani,sans-serif';
-  c.fillText(ellipsize(c,CONFIG.ASSINATURA_IMAGEM,W-2*M-60),M+30,footY+140);
-  if(logoRodape){const lh=54,lw=lh*logoRodape.width/logoRodape.height;c.drawImage(logoRodape,W-M-30-lw,footY+22,lw,lh);}
+  const fsAss=fitFont(c,CONFIG.ASSINATURA_IMAGEM,600,'Rajdhani,sans-serif',W-2*M-60,30,24);
+  c.fillStyle='rgba(247,247,247,.86)';c.fillText(ellipsize(c,CONFIG.ASSINATURA_IMAGEM,W-2*M-60),fx,footY+linhas[site?2:1]);
   onDrawn(token);
 }

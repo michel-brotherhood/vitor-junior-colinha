@@ -6,7 +6,7 @@ export const norm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUp
 /* ---------- situação da candidatura ---------- */
 // Textos reais de situação vistos em colinha.ai/api/v1/dados (2026-09-28): DEFERIDO, DEFERIDO EM PRAZO RECURSAL OU COM RECURSO,
 // INDEFERIDO, INDEFERIDO EM PRAZO RECURSAL OU COM RECURSO, PENDENTE DE JULGAMENTO, CANCELADO, FALECIMENTO, RENÚNCIA,
-// PEDIDO NÃO CONHECIDO (e a variante "EM PRAZO RECURSAL…"). INDEFERIDO é testado antes de DEFERIDO, porque contém a palavra.
+// PEDIDO NÃO CONHECIDO (e a variante "EM PRAZO RECURSAL…"). O campo `fora` do colinha.ai acrescenta "renuncia" e "inapto" (minúsculas). INDEFERIDO é testado antes de DEFERIDO, porque contém a palavra.
 const ehIndeferido = s => s.includes('INDEFERIDO');
 const ehDeferidoComRecurso = s => !ehIndeferido(s) && s.includes('DEFERIDO') && s.includes('RECURS');
 
@@ -28,6 +28,7 @@ export function status(sit) {
   if (ehDeferidoComRecurso(s)) return { cls: 'warn', txt: 'Deferida, com recurso' };
   if (s.includes('PENDENTE')) return { cls: 'warn', txt: 'Registro ainda em julgamento' };
   if (s.includes('RENUNCIA')) return { cls: 'bad', txt: 'Renunciou à candidatura', short: 'RENUNCIOU' };
+  if (s.includes('INAPT')) return { cls: 'bad', txt: 'Candidatura inapta', short: 'INAPTA' };
   if (s.includes('CANCEL') || s.includes('CASSAD') || s.includes('FALEC')) return { cls: 'bad', txt: sit, short: norm(sit) };
   return { cls: 'warn', txt: sit };
 }
