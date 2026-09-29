@@ -12,9 +12,13 @@ export const CONFIG = {
   ELEICAO: 20322002026, // valor herdado da referência; não verificado contra o TSE
   // Números fixos por cargo: { codigoDoCargo: numero }
   FIXOS: { 6: '1200' },
-  ASSINATURA_SITE: 'Iniciativa de Vitor Júnior 1200 (PDT), candidato a deputado federal pelo RJ',
+  CNPJ: '68.441.810/0001-17',
+  ASSINATURA_SITE: 'Iniciativa de Vitor Júnior 1200 (PDT), candidato a deputado federal pelo RJ · CNPJ 68.441.810/0001-17',
+  // Linha curta impressa no rodapé da imagem.
+  ASSINATURA_IMAGEM: 'Iniciativa de Vitor Júnior 1200 (PDT) · CNPJ 68.441.810/0001-17',
   // Endereço impresso no fim da imagem. Vazio = usa o endereço em que o app está publicado.
   SITE: '',
+  LOGO_RODAPE: base + 'public/img/pdt-branco.png', // logo branco do PDT, para fundos escuros
   FUNDO_VITOR: base + 'public/img/fundo-vitor.webp',
   LOGOS: base + 'logos/'
 };

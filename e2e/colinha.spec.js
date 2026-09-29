@@ -27,6 +27,9 @@ test.describe('base real mínima (data/candidatos.json)', () => {
     await expect(page.locator('#slot-df .chip.ok, #slot-df .chip.warn, #slot-df .chip.bad')).toHaveCount(0);
     await expect(page.locator('#slot-df')).toContainText('Número fixo desta colinha');
     await expect(page.locator('#aviso')).toBeVisible();
+    await expect(page.locator('#sig')).toHaveText('Iniciativa de Vitor Júnior 1200 (PDT), candidato a deputado federal pelo RJ · CNPJ 68.441.810/0001-17');
+    await expect(page.locator('footer .foot-logo')).toBeVisible();
+    expect(await page.locator('footer .foot-logo').evaluate(i => i.complete && i.naturalWidth > 0)).toBe(true);
     await expect(page.locator('#phrase')).toHaveText('Pro Rio voltar a funcionar! Esse é o meu time:');
     await expect(page.getByRole('button', { name: 'Pro Rio', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('#tabCampaign')).toHaveAttribute('aria-pressed', 'true');

@@ -23,7 +23,7 @@ Para publicar, copie `index.html`, `public/`, `src/` e `data/` para qualquer hos
 | Caminho | Papel |
 |---|---|
 | `index.html`, `public/styles.css` | Markup e CSS (acento laranja `--accent`) |
-| `public/img/` | `vitor-junior.jpg` (foto), `fundo-vitor.webp` (fundo 1080×1920), `social-share.webp` |
+| `public/img/` | `vitor-junior.jpg` (foto), `fundo-vitor.webp` (fundo 1080×1920), `pdt-branco.png` (logo do partido, branco), `social-share.webp` |
 | `assets/originais/` | Arquivos originais recebidos (fundo, perfil, retrato 1400², zip de referência) |
 | `src/search.js` | Lógica pura: normalização, situação, índice, sugestões, resolução, parâmetros do link |
 | `src/dataStore.js` | Única camada que conhece `data/candidatos.json` e as URLs de foto |
@@ -65,6 +65,7 @@ O rodapé mantém o texto "atualizados periodicamente"; isso só é verdade se a
 
 - Deputado federal fixo em 1200: campo `disabled`, sem botão de limpar, selo "Número fixo desta colinha"; o link e a URL nunca o sobrescrevem. Cartão e imagem omitem o que estiver vazio (sem nome completo, sem selo de situação).
 - Busca por número (prefixo) ou nome (sem acento/caixa), legenda de 2 dígitos para deputados, mesma candidatura não pode ocupar as duas vagas de senador.
+- Rodapé da página e da imagem exportada: logo do PDT e "Iniciativa de Vitor Júnior 1200 (PDT) · CNPJ 68.441.810/0001-17" (`CONFIG.CNPJ`/`ASSINATURA_*` em `src/config.js`).
 - Fundos: **Campanha** (padrão, arte laranja do candidato), 8 estilos de jogo e 8 causas.
 - Link: `?v=<df>-<de>-<s1>-<s2>-<go>-<pr>&f=<fundo>`. Só números entram no link; `f` é validado. **Sem persistência local**: recarregar sem o `?v=` zera os campos.
 - Nenhum dado pessoal é coletado, armazenado ou enviado; sem métricas nem cookies.
@@ -79,6 +80,5 @@ O rodapé mantém o texto "atualizados periodicamente"; isso só é verdade se a
 ## Pendências
 
 - Nome completo e situação no TSE do candidato (vêm da importação).
-- CNPJ/identificação do responsável no rodapé (hoje omitido; material eleitoral costuma exigir).
 - Frase da aba Campanha ("Pro Rio voltar a funcionar! Esse é o meu time:", do material de campanha): confirmar.
 - Acesso de rede à fonte de dados para rodar o importador.

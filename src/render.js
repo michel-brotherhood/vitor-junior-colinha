@@ -54,7 +54,7 @@ export async function draw(token){
     if(st.party) return {label:s.label,dig:2,num:st.party.num,name:'VOTO NA LEGENDA',sigla:st.party.sigla,logo:logoURL(st.party.sigla),legenda:true};
     return {label:s.label,dig:cg.dig,empty:true};
   });
-  const imgs = await Promise.all(rows.map(r=>Promise.all([loadImg(r.photo),loadImg(r.logo)])));
+  const [imgs, logoRodape] = await Promise.all([Promise.all(rows.map(r=>Promise.all([loadImg(r.photo),loadImg(r.logo)]))), loadImg(CONFIG.LOGO_RODAPE)]);
   if(token!==renderToken) return;
   const cv=$('#out'), c=cv.getContext('2d'); const W=1080,H=1920,M=52; const [acc,acc2]=PAL[S.bg];
   c.clearRect(0,0,W,H); drawBG(c,S.bg,W,H);
@@ -81,7 +81,7 @@ export async function draw(token){
   c.fillText(`Rio de Janeiro · 1º turno · 4 de outubro de 2026`,hx+pad,M+hh-pad+6);
 
   // linhas
-  const footH=118; const footY=H-M-footH;
+  const footH=150; const footY=H-M-footH;
   const top=M+hh+30, gap=22, n=rows.length; const avail=footY-26-top;
   const rh=Math.min(n===1?300:200,(avail-gap*(n-1))/n); const y0 = n===1? top+(avail-rh)/2 : top;
   rows.forEach((r,i)=>{
@@ -119,5 +119,9 @@ export async function draw(token){
   c.fillStyle='#F7F7F7';c.font='700 30px Rajdhani,sans-serif';c.fillText('Celular não entra na cabine: leve impresso ou anotado.',M+30,footY+46);
   const site = CONFIG.SITE || location.host;
   c.fillStyle=acc2;c.font='400 30px CutePixel,monospace';c.fillText(`Monte a sua: ${site}`,M+30,footY+90);
+  // identificação do responsável e logo do partido (obrigatórios em material de campanha)
+  c.fillStyle='rgba(247,247,247,.78)';c.font='600 24px Rajdhani,sans-serif';
+  c.fillText(ellipsize(c,CONFIG.ASSINATURA_IMAGEM,W-2*M-60),M+30,footY+130);
+  if(logoRodape){const lh=54,lw=lh*logoRodape.width/logoRodape.height;c.drawImage(logoRodape,W-M-30-lw,footY+22,lw,lh);}
   onDrawn(token);
 }
