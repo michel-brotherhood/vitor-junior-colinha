@@ -80,5 +80,4 @@ O rodapé mantém o texto "atualizados periodicamente"; isso só é verdade se a
 ## Pendências
 
 - Nome completo e situação no TSE do candidato (vêm da importação).
-- Frase da aba Campanha ("Pro Rio voltar a funcionar! Esse é o meu time:", do material de campanha): confirmar.
 - Acesso de rede à fonte de dados para rodar o importador.
