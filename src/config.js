@@ -11,9 +11,10 @@ export const CONFIG = {
   ANO: 2026,
   ELEICAO: 20322002026, // valor herdado da referência; não verificado contra o TSE
   // Números fixos por cargo: { codigoDoCargo: numero }
-  FIXOS: { 7: '65021' },
-  ASSINATURA_SITE: 'Iniciativa de Márcio Filho 65021 (PCdoB), candidato a deputado estadual pelo RJ · CNPJ 68.472.044/0001-58',
-  // Endereço impresso no fim da imagem. Ajuste para o domínio onde este app for publicado.
-  SITE: 'www.filhomarcio.com.br/colinha',
+  FIXOS: { 6: '1200' },
+  ASSINATURA_SITE: 'Iniciativa de Vitor Júnior 1200 (PDT), candidato a deputado federal pelo RJ',
+  // Endereço impresso no fim da imagem. Vazio = usa o endereço em que o app está publicado.
+  SITE: '',
+  FUNDO_VITOR: base + 'public/img/fundo-vitor.webp',
   LOGOS: base + 'logos/'
 };

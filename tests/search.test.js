@@ -98,7 +98,8 @@ describe('resolveRaw', () => {
 
 describe('link', () => {
   it('parseParams valida fundo e votos', () => {
-    expect(parseParams('?f=moba&v=1234-65021-123-456-13-22')).toEqual({ bg: 'moba', votos: ['1234', '65021', '123', '456', '13', '22'] });
+    expect(parseParams('?f=moba&v=1200-99020-123-456-13-22')).toEqual({ bg: 'moba', votos: ['1200', '99020', '123', '456', '13', '22'] });
+    expect(parseParams('?f=vitor').bg).toBe('vitor');
     expect(parseParams('?f=__proto__').bg).toBeNull();
     expect(parseParams('?f=constructor').bg).toBeNull();
     expect(parseParams('?f=<script>').bg).toBeNull();

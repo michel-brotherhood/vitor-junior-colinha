@@ -37,13 +37,18 @@ export const CAUSES = [
   { id: 'esporte', label: 'Esporte', frase: 'o Esporte' },
   { id: 'tecnologia', label: 'Tecnologia', frase: 'a Tecnologia' }
 ];
+export const CAMPAIGN = [
+  { id: 'vitor', label: 'Pro Rio', frase: 'Pro Rio voltar a funcionar!' }
+];
 export const ALLBG = Object.fromEntries([
+  ...CAMPAIGN.map(c => [c.id, { ...c, kind: 'campaign' }]),
   ...GAMES.map(g => [g.id, { ...g, kind: 'game' }]),
   ...CAUSES.map(c => [c.id, { ...c, kind: 'cause' }])
 ]);
 
 export function phraseText(bgId) {
   const b = ALLBG[bgId];
+  if (b.kind === 'campaign') return `${b.frase} Esse é o meu time:`;
   if (b.kind === 'game') return `Sou fã de ${b.frase} e vou entrar no jogo com esse time:`;
   return `Para defender ${b.frase}, meu time é esse:`;
 }

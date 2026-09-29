@@ -3,63 +3,68 @@ import { readFileSync } from 'node:fs';
 
 const real = JSON.parse(readFileSync(new URL('../data/candidatos.json', import.meta.url), 'utf8'));
 const fx = JSON.parse(readFileSync(new URL('../tests/fixtures/candidatos-teste.json', import.meta.url), 'utf8'));
-// Base de teste = fixture sintética + o registro real 65021 + cargos que a fixture não cobre.
-const testData = { ...fx, 'RJ/7': real['RJ/7'], 'RJ/3': { candidatos: [] } };
+// Base de teste = registro real do RJ/6 (Vitor Júnior, fixo) + fixture sintética reposicionada como
+// deputados estaduais (5 dígitos) + cargos que a fixture não cobre.
+const estaduais = { candidatos: fx['RJ/6'].candidatos.map(c => ({ ...c, numero: c.numero + '0' })) };
+const testData = { ...fx, 'RJ/6': real['RJ/6'], 'RJ/7': estaduais, 'RJ/3': { candidatos: [] } };
 
 async function withFixture(page) {
   await page.route('**/data/candidatos.json', r => r.fulfill({ json: testData }));
 }
 const inp = (page, k) => page.locator('#in-' + k);
-const ready = page => expect(inp(page, 'df')).toBeEnabled();
+const ready = page => expect(inp(page, 'de')).toBeEnabled();
 
 test.describe('base real mínima (data/candidatos.json)', () => {
-  test('estado inicial: só Márcio Filho, travado, com aviso de base incompleta', async ({ page }) => {
+  test('estado inicial: só Vitor Júnior 1200, travado, com aviso de base incompleta', async ({ page }) => {
     await page.goto('/');
     await ready(page);
-    const de = inp(page, 'de');
-    await expect(de).toHaveValue('65021');
+    const de = inp(page, 'df');
+    await expect(de).toHaveValue('1200');
     await expect(de).toBeDisabled();
-    await expect(page.locator('#slot-de .clear')).toBeHidden();
-    await expect(page.locator('#slot-de')).toContainText('MÁRCIO ROBERTO CARVALHO MATHEUS FILHO · 65021 · PCDOB');
-    await expect(page.locator('#slot-de')).toContainText('Candidatura deferida');
-    await expect(page.locator('#slot-de')).toContainText('Número fixo desta colinha');
+    await expect(page.locator('#slot-df .clear')).toBeHidden();
+    await expect(page.locator('#slot-df')).toContainText('VITOR JUNIOR');
+    await expect(page.locator('#slot-df .fu')).toHaveText('1200 · PDT'); // sem nome completo nem status inventados
+    await expect(page.locator('#slot-df .chip.ok, #slot-df .chip.warn, #slot-df .chip.bad')).toHaveCount(0);
+    await expect(page.locator('#slot-df')).toContainText('Número fixo desta colinha');
     await expect(page.locator('#aviso')).toBeVisible();
-    await expect(page.locator('#phrase')).toHaveText('Sou fã de RPG e vou entrar no jogo com esse time:');
-    await expect(page.locator('#out')).toHaveAttribute('aria-label', /Deputado Federal: ainda vou decidir.*Deputado Estadual: MÁRCIO FILHO, número 65021/s);
-    for (const k of ['df', 's1', 's2', 'go', 'pr']) await expect(inp(page, k)).toHaveValue('');
+    await expect(page.locator('#phrase')).toHaveText('Pro Rio voltar a funcionar! Esse é o meu time:');
+    await expect(page.getByRole('button', { name: 'Pro Rio', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#tabCampaign')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#out')).toHaveAttribute('aria-label', /Deputado Federal: VITOR JUNIOR, número 1200.*Deputado Estadual: ainda vou decidir/s);
+    for (const k of ['de', 's1', 's2', 'go', 'pr']) await expect(inp(page, k)).toHaveValue('');
   });
 
   test('tentativa de alterar o campo fixo (teclado, força bruta, link)', async ({ page }) => {
     await page.goto('/?v=1111-99999-222-333-44-55');
     await ready(page);
-    await expect(inp(page, 'de')).toHaveValue('65021');
-    await inp(page, 'de').click({ force: true });
+    await expect(inp(page, 'df')).toHaveValue('1200');
+    await inp(page, 'df').click({ force: true });
     await page.keyboard.type('12345');
-    await expect(inp(page, 'de')).toHaveValue('65021');
-    await expect(page.locator('#slot-de')).toContainText('MÁRCIO FILHO');
+    await expect(inp(page, 'df')).toHaveValue('1200');
+    await expect(page.locator('#slot-df')).toContainText('VITOR JUNIOR');
     // o link gerado também mantém o número fixo, ignorando o 99999 vindo da URL
     await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
     await page.locator('#link').click();
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('v=1111-65021-222-333-44-55');
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toContain('v=1200-99999-222-333-44-55');
   });
 
   test('busca sem resultado na base real', async ({ page }) => {
     await page.goto('/');
     await ready(page);
-    await inp(page, 'df').fill('1234');
-    await expect(page.locator('#slot-df .err')).toHaveText('Nenhuma candidatura com o número 1234 para Deputado Federal no Rio de Janeiro.');
+    await inp(page, 'de').fill('12345');
+    await expect(page.locator('#slot-de .err')).toHaveText('Nenhuma candidatura com o número 12345 para Deputado Estadual no Rio de Janeiro.');
   });
 
   test('falha de carregamento: banner e "Tentar de novo"', async ({ page }) => {
     await page.route('**/data/candidatos.json', r => r.abort());
     await page.goto('/');
     await expect(page.locator('#banner')).toBeVisible();
-    await expect(inp(page, 'df')).toBeDisabled();
+    await expect(inp(page, 'de')).toBeDisabled();
     await page.unroute('**/data/candidatos.json');
     await page.locator('#retry').click();
     await expect(page.locator('#banner')).toBeHidden();
     await ready(page);
-    await expect(page.locator('#slot-de')).toContainText('MÁRCIO FILHO');
+    await expect(page.locator('#slot-df')).toContainText('VITOR JUNIOR');
   });
 
   test('JSON HTTP 500 também mostra o banner', async ({ page }) => {
@@ -73,68 +78,68 @@ test.describe('com fixture sintética de teste', () => {
   test.beforeEach(async ({ page }) => { await withFixture(page); await page.goto('/'); await ready(page); });
 
   test('número completo seleciona, mostra cartão e avança o foco', async ({ page }) => {
-    await inp(page, 'df').fill('9902');
-    await expect(page.locator('#slot-df .nu')).toHaveText('TESTE JOSÉ');
-    await expect(page.locator('#slot-df')).toContainText('9902 · XX');
+    await inp(page, 'de').fill('99020');
+    await expect(page.locator('#slot-de .nu')).toHaveText('TESTE JOSÉ');
+    await expect(page.locator('#slot-de')).toContainText('99020 · XX');
     await expect(inp(page, 's1')).toBeFocused(); // pula o deputado estadual travado
-    await expect(page.locator('#out')).toHaveAttribute('aria-label', /Deputado Federal: TESTE JOSÉ, número 9902/);
+    await expect(page.locator('#out')).toHaveAttribute('aria-label', /Deputado Estadual: TESTE JOSÉ, número 99020/);
   });
 
   test('busca por nome com teclado (setas + Enter) e homônimos', async ({ page }) => {
-    await inp(page, 'df').click();
+    await inp(page, 'de').click();
     await page.keyboard.type('jose');
-    const opts = page.locator('#sugs-df [role=option]');
+    const opts = page.locator('#sugs-de [role=option]');
     await expect(opts).toHaveCount(2);
-    await expect(inp(page, 'df')).toHaveAttribute('aria-expanded', 'true');
+    await expect(inp(page, 'de')).toHaveAttribute('aria-expanded', 'true');
     await page.keyboard.press('ArrowDown');
     await page.keyboard.press('ArrowDown');
-    await expect(inp(page, 'df')).toHaveAttribute('aria-activedescendant', /opt-df-1/);
+    await expect(inp(page, 'de')).toHaveAttribute('aria-activedescendant', /opt-de-1/);
     await page.keyboard.press('Enter');
-    await expect(inp(page, 'df')).toHaveValue(/^990[23]$/);
-    await expect(page.locator('#slot-df .res')).toBeVisible();
+    await expect(inp(page, 'de')).toHaveValue(/^990[23]0$/);
+    await expect(page.locator('#slot-de .res')).toBeVisible();
   });
 
   test('Esc fecha a lista sem apagar o texto', async ({ page }) => {
-    await inp(page, 'df').click();
+    await inp(page, 'de').click();
     await page.keyboard.type('teste');
-    await expect(page.locator('#sugs-df')).toBeVisible();
+    await expect(page.locator('#sugs-de')).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(page.locator('#sugs-df')).toBeHidden();
-    await expect(inp(page, 'df')).toHaveValue('teste');
+    await expect(page.locator('#sugs-de')).toBeHidden();
+    await expect(inp(page, 'de')).toHaveValue('teste');
   });
 
   test('sugestão de legenda e voto de legenda', async ({ page }) => {
-    await inp(page, 'df').click();
+    await inp(page, 'de').click();
     await page.keyboard.type('99');
-    await expect(page.locator('#sugs-df [role=option]').first()).toContainText('Votar só no partido (legenda)');
+    await expect(page.locator('#sugs-de [role=option]').first()).toContainText('Votar só no partido (legenda)');
     await page.keyboard.press('Enter');
-    await expect(page.locator('#slot-df .note')).toHaveText('Voto de legenda: o voto vai para o partido XX (99).');
+    await expect(page.locator('#slot-de .note')).toHaveText('Voto de legenda: o voto vai para o partido XX (99).');
     await expect(page.locator('#out')).toHaveAttribute('aria-label', /voto na legenda XX, número 99/);
   });
 
   test('legenda digitada só confirma ao sair do campo', async ({ page }) => {
-    await inp(page, 'df').fill('88');
-    await expect(page.locator('#slot-df .note')).toHaveCount(0);
+    await inp(page, 'de').fill('88');
+    await expect(page.locator('#slot-de .note')).toHaveCount(0);
     await inp(page, 's1').click();
-    await expect(page.locator('#slot-df .note')).toContainText('partido YY (88)');
+    await expect(page.locator('#slot-de .note')).toContainText('partido YY (88)');
   });
 
   test('número inexistente, dígitos demais e limpar', async ({ page }) => {
-    await inp(page, 'df').fill('1111');
-    await expect(page.locator('#slot-df .err')).toContainText('Nenhuma candidatura com o número 1111');
-    await inp(page, 'df').fill('11111');
-    await expect(page.locator('#slot-df .err')).toHaveText('Deputado Federal tem 4 dígitos.');
-    await inp(page, 'df').fill('9901');
-    await expect(page.locator('#slot-df .res')).toBeVisible();
-    await page.locator('#slot-df .clear').click();
-    await expect(inp(page, 'df')).toHaveValue('');
-    await expect(page.locator('#slot-df .res')).toHaveCount(0);
-    await expect(inp(page, 'df')).toBeFocused();
+    await inp(page, 'de').fill('11111');
+    await expect(page.locator('#slot-de .err')).toContainText('Nenhuma candidatura com o número 11111');
+    await inp(page, 'de').fill('111111');
+    await expect(page.locator('#slot-de .err')).toHaveText('Deputado Estadual tem 5 dígitos.');
+    await inp(page, 'de').fill('99010');
+    await expect(page.locator('#slot-de .res')).toBeVisible();
+    await page.locator('#slot-de .clear').click();
+    await expect(inp(page, 'de')).toHaveValue('');
+    await expect(page.locator('#slot-de .res')).toHaveCount(0);
+    await expect(inp(page, 'de')).toBeFocused();
   });
 
   test('nome sem resultado não abre lista', async ({ page }) => {
-    await inp(page, 'df').fill('zzzzzz');
-    await expect(page.locator('#sugs-df')).toBeHidden();
+    await inp(page, 'de').fill('zzzzzz');
+    await expect(page.locator('#sugs-de')).toBeHidden();
   });
 
   test('mesmo senador nas duas vagas é bloqueado', async ({ page }) => {
@@ -150,37 +155,37 @@ test.describe('com fixture sintética de teste', () => {
   });
 
   test('situação: indeferido aparece como aviso vermelho', async ({ page }) => {
-    await inp(page, 'df').fill('8801');
-    await expect(page.locator('#slot-df .chip.bad')).toContainText('Renunciou');
+    await inp(page, 'de').fill('88010');
+    await expect(page.locator('#slot-de .chip.bad')).toContainText('Renunciou');
   });
 
   test('editar depois de escolher remove o cartão anterior', async ({ page }) => {
-    await inp(page, 'df').fill('9901');
-    await expect(page.locator('#slot-df .res')).toBeVisible();
-    await inp(page, 'df').fill('990');
-    await expect(page.locator('#slot-df .res')).toHaveCount(0);
-    await expect(page.locator('#out')).toHaveAttribute('aria-label', /Deputado Federal: ainda vou decidir/);
+    await inp(page, 'de').fill('99010');
+    await expect(page.locator('#slot-de .res')).toBeVisible();
+    await inp(page, 'de').fill('990');
+    await expect(page.locator('#slot-de .res')).toHaveCount(0);
+    await expect(page.locator('#out')).toHaveAttribute('aria-label', /Deputado Estadual: ainda vou decidir/);
   });
 
   test('link copiado reconstitui a colinha em sessão limpa', async ({ page, context, browser, baseURL }) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-    await inp(page, 'df').fill('9902');
+    await inp(page, 'de').fill('99020');
     await inp(page, 's1').fill('901');
     await page.locator('#tabCause').click();
     await page.getByRole('button', { name: 'Saúde' }).click();
     await page.locator('#link').click();
     await expect(page.locator('#toast')).toHaveText('Link copiado.');
     const url = await page.evaluate(() => navigator.clipboard.readText());
-    expect(url).toBe(`${baseURL}/?v=9902-65021-901---&f=saude`);
+    expect(url).toBe(`${baseURL}/?v=1200-99020-901---&f=saude`);
     const ctx2 = await browser.newContext();
     const p2 = await ctx2.newPage();
     await withFixture(p2);
     await p2.goto(url);
     await ready(p2);
-    await expect(inp(p2, 'df')).toHaveValue('9902');
-    await expect(p2.locator('#slot-df .nu')).toHaveText('TESTE JOSÉ');
+    await expect(inp(p2, 'de')).toHaveValue('99020');
+    await expect(p2.locator('#slot-de .nu')).toHaveText('TESTE JOSÉ');
     await expect(p2.locator('#slot-s1 .nu')).toHaveText('TESTE SENADOR');
-    await expect(inp(p2, 'de')).toHaveValue('65021');
+    await expect(inp(p2, 'df')).toHaveValue('1200');
     await expect(p2.locator('#phrase')).toHaveText('Para defender a Saúde, meu time é esse:');
     await expect(p2.locator('#tabCause')).toHaveAttribute('aria-pressed', 'true');
     await ctx2.close();
@@ -195,7 +200,7 @@ test.describe('com fixture sintética de teste', () => {
     await ready(page);
     expect(dialogs).toEqual([]);
     expect(errors).toEqual([]);
-    await expect(page.locator('#phrase')).toHaveText('Sou fã de RPG e vou entrar no jogo com esse time:');
+    await expect(page.locator('#phrase')).toHaveText('Pro Rio voltar a funcionar! Esse é o meu time:');
     await expect(page.locator('img[src="x"]')).toHaveCount(0);
   });
 });
@@ -205,10 +210,14 @@ test.describe('fundos', () => {
   const jogos = [['RPG', 'RPG'], ['RTS', 'RTS'], ['FPS', 'FPS'], ['Luta', 'luta'], ['Corrida', 'corrida'], ['Plataforma', 'plataforma'], ['Puzzle', 'puzzle'], ['MOBA', 'MOBA']];
   const causas = [['Educação', 'a Educação'], ['Ciência', 'a Ciência'], ['Saúde', 'a Saúde'], ['Segurança', 'a Segurança'], ['Cultura', 'a Cultura'], ['Meio Ambiente', 'o Meio Ambiente'], ['Esporte', 'o Esporte'], ['Tecnologia', 'a Tecnologia']];
 
-  test('as 16 opções: seleção, frase e prévia mudam; RPG inicial marcado', async ({ page }) => {
-    await expect(page.getByRole('button', { name: 'RPG' })).toHaveAttribute('aria-pressed', 'true');
+  test('as 17 opções: seleção, frase e prévia mudam; Pro Rio (Vitor) inicial marcado', async ({ page }) => {
+    await expect(page.getByRole('button', { name: 'Pro Rio', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#bgs .bg')).toHaveCount(1);
     const seen = new Set();
-    const shot = async () => { await page.evaluate(() => window.__x = 1); await page.waitForTimeout(150); return page.evaluate(() => document.querySelector('#out').toDataURL().length + ':' + document.querySelector('#out').toDataURL().slice(-200)); };
+    const shot = async () => { await page.waitForTimeout(200); return page.evaluate(() => { const u = document.querySelector('#out').toDataURL(); return u.length + ':' + u.slice(-200); }); };
+    seen.add(await shot());
+    await page.locator('#tabGame').click();
+    await expect(page.locator('#bgs .bg')).toHaveCount(8);
     for (const [label, frase] of jogos) {
       await page.getByRole('button', { name: label, exact: true }).click();
       await expect(page.getByRole('button', { name: label, exact: true })).toHaveAttribute('aria-pressed', 'true');
@@ -223,14 +232,28 @@ test.describe('fundos', () => {
       await expect(page.locator('#phrase')).toHaveText(`Para defender ${frase}, meu time é esse:`);
       seen.add(await shot());
     }
-    expect(seen.size).toBe(16); // cada fundo gera uma imagem distinta
-    await page.locator('#tabGame').click();
-    await expect(page.locator('#bgs .bg')).toHaveCount(8);
+    expect(seen.size).toBe(17); // cada fundo gera uma imagem distinta
+    await page.locator('#tabCampaign').click();
+    await expect(page.locator('#bgs .bg')).toHaveCount(1);
+  });
+
+  test('fundo da campanha carrega a imagem laranja e o link ?f=vitor abre nele', async ({ page }) => {
+    await page.waitForTimeout(500);
+    // pixel da margem esquerda do canvas (fora dos painéis) deve ser laranja (imagem carregada, não o azul-escuro do site)
+    const px = await page.evaluate(() => { const c = document.querySelector('#out'); return [...c.getContext('2d').getImageData(20, 1000, 1, 1).data]; });
+    expect(px[0]).toBeGreaterThan(200); expect(px[1]).toBeGreaterThan(60); expect(px[1]).toBeLessThan(150); expect(px[2]).toBeLessThan(40);
+    await page.goto('/?f=vitor');
+    await ready(page);
+    await expect(page.locator('#tabCampaign')).toHaveAttribute('aria-pressed', 'true');
+    await page.goto('/?f=rpg');
+    await ready(page);
+    await expect(page.locator('#tabGame')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: 'RPG', exact: true })).toHaveAttribute('aria-pressed', 'true');
   });
 });
 
 test.describe('exportação', () => {
-  test.beforeEach(async ({ page }) => { await withFixture(page); await page.goto('/'); await ready(page); await inp(page, 'df').fill('9902'); });
+  test.beforeEach(async ({ page }) => { await withFixture(page); await page.goto('/'); await ready(page); await inp(page, 'de').fill('99020'); });
 
   test('baixar imagem: nome, PNG 1080×1920 e idêntica à prévia', async ({ page }) => {
     const [dl] = await Promise.all([page.waitForEvent('download'), page.locator('#dl').click()]);
@@ -257,14 +280,14 @@ test.describe('exportação', () => {
     await expect.poll(() => page.evaluate(() => window.__shared)).toMatchObject({ n: 'colinha-2026-rj.png', t: 'image/png' });
     const sh = await page.evaluate(() => window.__shared);
     expect(sh.s).toBeGreaterThan(10000);
-    expect(sh.text).toContain('Sou fã de RPG');
-    expect(sh.text).toContain('?v=9902-65021');
+    expect(sh.text).toContain('Pro Rio voltar a funcionar!');
+    expect(sh.text).toContain('?v=1200-99020');
   });
 
   test('compartilhar sem arquivo (só texto/URL)', async ({ page }) => {
     await page.evaluate(() => { navigator.canShare = () => false; navigator.share = async d => { window.__shared = d; }; });
     await page.locator('#share').click();
-    await expect.poll(() => page.evaluate(() => window.__shared && window.__shared.url)).toContain('f=rpg');
+    await expect.poll(() => page.evaluate(() => window.__shared && window.__shared.url)).toContain('f=vitor');
   });
 
   test('compartilhar sem Web Share cai para download', async ({ page }) => {
@@ -288,7 +311,7 @@ test.describe('exportação', () => {
     await page.locator('#link').click();
     await expect.poll(() => seen).not.toBeNull();
     expect(seen.type).toBe('prompt');
-    expect(seen.value).toContain('?v=9902-65021');
+    expect(seen.value).toContain('?v=1200-99020');
   });
 
   test('imprimir: só a imagem aparece e ela é a mesma da prévia', async ({ page }) => {
@@ -319,7 +342,7 @@ test.describe('layout e acessibilidade', () => {
     const y = sel => page.locator(sel).evaluate(e => e.getBoundingClientRect().top + scrollY);
     expect(await y('#slots')).toBeLessThan(await y('#bgs'));
     expect(await y('#bgs')).toBeLessThan(await y('#out'));
-    await inp(page, 'df').tap(); await page.keyboard.type('jose');
+    await inp(page, 'de').tap(); await page.keyboard.type('jose');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     await ctx.close();
   });
@@ -335,8 +358,8 @@ test.describe('layout e acessibilidade', () => {
   test('navegação só por teclado até compartilhar', async ({ page }) => {
     await withFixture(page); await page.goto('/'); await ready(page);
     await page.keyboard.press('Tab');
-    await expect(inp(page, 'df')).toBeFocused();
-    await page.keyboard.type('9901');
+    await expect(inp(page, 'de')).toBeFocused();
+    await page.keyboard.type('99010');
     await expect(inp(page, 's1')).toBeFocused();
     const focusOutline = await inp(page, 's1').evaluate(e => getComputedStyle(e).outlineStyle);
     expect(focusOutline).not.toBe('none');

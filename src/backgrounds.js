@@ -9,11 +9,26 @@ function poly(c,cx,cy,r,n,rot=0){c.beginPath();for(let i=0;i<n;i++){const a=rot+
 export const PAL = {
   rpg:['#E8B84A','#B08CFF'], rts:['#7CFFB2','#FFD166'], fps:['#FF6B3D','#00EAFF'], luta:['#FFD23F','#FF3B5C'],
   corrida:['#FF2E4C','#F7F7F7'], plataforma:['#FFD23F','#2BD96B'], puzzle:['#FF4FD8','#4FF0FF'], moba:['#3CE0C8','#FF5A5A'],
+  vitor:['#FFB068','#FFFFFF'],
   educacao:['#FFE27A','#9FE8C3'], ciencia:['#5CE1FF','#B28CFF'], saude:['#5CFFB0','#FF6B81'], seguranca:['#4DA3FF','#FFC845'],
   cultura:['#FF7AD9','#FFD166'], ambiente:['#B6FF5C','#FFD166'], esporte:['#FFE14D','#F7F7F7'], tecnologia:['#00EAFF','#7CFF6B']
 };
 
+// Fundo da campanha: imagem 1080×1920 carregada uma vez. Antes de carregar (ou se falhar), laranja liso.
+let vitorImg = null;
+export function carregarFundoVitor(url) {
+  return new Promise(res => {
+    const i = new Image();
+    i.onload = () => { vitorImg = i; res(true); };
+    i.onerror = () => res(false);
+    i.src = url;
+  });
+}
 const DRAW = {
+  vitor(c,W,H){
+    if (vitorImg) c.drawImage(vitorImg,0,0,W,H);
+    else { c.fillStyle='#FF6A00'; c.fillRect(0,0,W,H); }
+  },
   rpg(c,W,H,r){
     c.fillStyle=rg(c,W/2,H*.42,80,H*.85,['#35264f','#1a1229','#0b0712']);c.fillRect(0,0,W,H);
     c.strokeStyle='rgba(255,255,255,.035)';c.lineWidth=2;

@@ -1,0 +1,20 @@
+{
+  "_comentario": "Registros fixos desta colinha. O importador os mescla na base (sobrepõe a foto ou insere se faltar).",
+  "fixos": [
+    {
+      "cargo": "RJ/6",
+      "registro": {
+        "id": "vitor-junior-1200",
+        "numero": "1200",
+        "nomeUrna": "VITOR JUNIOR",
+        "nomeCompleto": "",
+        "partido": {
+          "sigla": "PDT"
+        },
+        "nomeColigacao": "",
+        "descricaoSituacao": "",
+        "foto": "public/img/vitor-junior.jpg"
+      }
+    }
+  ]
+}

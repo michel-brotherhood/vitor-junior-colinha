@@ -3,15 +3,19 @@
 //
 //   npm run atualizar-dados -- --csv consulta_cand_2026_RJ.csv --csv consulta_cand_2026_BRASIL.csv
 //   npm run atualizar-dados -- --api --eleicao <id> [--fotos]
+//   npm run atualizar-dados -- --colinha-ai            (republicador de terceiros; ver aviso abaixo)
 //
 // Fontes (NENHUMA foi acessada/verificada no desenvolvimento: os hosts do TSE estavam bloqueados):
 //  * --csv : Dados Abertos do TSE, arquivos consulta_cand_<ano>_<UF>.csv (latin1, ';'). Baixe você mesmo em dadosabertos.tse.jus.br.
 //  * --api : DivulgaCandContas (divulgacandcontas.tse.jus.br/divulga/rest/v1/...). Rotas e id da eleição precisam ser
 //            conferidos por quem rodar o script; ajuste em `rotaLista`/`rotaFoto` se o TSE tiver mudado.
+//  * --colinha-ai : API de colinha.ai (contrato do sync.php do projeto colinha-alequizao). NÃO é o TSE: é um site de terceiros que
+//            republica os dados. Também não foi acessada no desenvolvimento (bloqueada). A fonte fica registrada em _meta.fonte.
+// Os registros de data/fixos.json (candidato fixo desta colinha) são mesclados na base; sem eles o script falha.
 // O script NUNCA sobrescreve a base se a validação falhar.
 import { readFile, writeFile, rename, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { candidatosDeCsv, validar, CHAVES } from './lib/tse.mjs';
+import { candidatosDeCsv, validar, CHAVES, CONSULTAS_COLINHA_AI, listarColinhaAi, mesclarFixos } from './lib/tse.mjs';
 
 const args = process.argv.slice(2);
 const opt = n => { const i = args.indexOf('--' + n); return i < 0 ? null : args[i + 1]; };
@@ -56,6 +60,20 @@ async function porApi(eleicao) {
   return { dados, fonte: `DivulgaCandContas API, eleição ${eleicao}` };
 }
 
+async function porColinhaAi() {
+  const base = opt('colinha-ai-url') || 'https://colinha.ai/api/v1';
+  const pega = async url => {
+    for (let t = 0; t < 3; t++) {
+      try { return await (await get(url)).json(); } catch (e) { if (t === 2) throw e; await dormir(2000 + t * 3000); }
+    }
+  };
+  const dados = {};
+  for (const q of CONSULTAS_COLINHA_AI) { dados[q.chave] = { candidatos: await listarColinhaAi(pega, base, q) }; await dormir(250); }
+  let atualizado = null;
+  try { atualizado = (await pega(base + '/dados')).atualizadoEm || null; } catch { /* opcional */ }
+  return { dados, fonte: `colinha.ai (republicador de terceiros dos dados do TSE)${atualizado ? `, atualizado em ${atualizado}` : ''}` };
+}
+
 async function baixarFotos(dados, eleicao) {
   await mkdir(new URL('../data/fotos/', import.meta.url), { recursive: true });
   let ok = 0, falha = 0;
@@ -74,8 +92,10 @@ async function baixarFotos(dados, eleicao) {
 
 try {
   const csvs = opts('csv');
-  if (!csvs.length && !tem('api')) throw new Error('Use --csv <arquivo> (repetível) ou --api --eleicao <id>. Veja o README.');
-  const { dados, fonte } = csvs.length ? await porCsv(csvs) : await porApi(opt('eleicao'));
+  if (!csvs.length && !tem('api') && !tem('colinha-ai')) throw new Error('Use --csv <arquivo> (repetível), --api --eleicao <id> ou --colinha-ai. Veja o README.');
+  const { dados, fonte } = csvs.length ? await porCsv(csvs) : tem('colinha-ai') ? await porColinhaAi() : await porApi(opt('eleicao'));
+  const fixos = JSON.parse(await readFile(new URL('../data/fixos.json', import.meta.url), 'utf8')).fixos;
+  for (const a of mesclarFixos(dados, fixos)) console.warn('aviso:', a);
   const erros = validar(dados, { permitirVazio: tem('permitir-vazio') });
   if (erros.length) throw new Error('Validação falhou, base NÃO alterada:\n - ' + erros.slice(0, 20).join('\n - '));
   const saida = { _meta: { completo: true, fonte, geradoEm: new Date().toISOString(), ano: ANO }, ...dados };

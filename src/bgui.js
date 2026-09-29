@@ -1,5 +1,5 @@
 // Etapa 2: abas e grade de fundos.
-import { GAMES, CAUSES, ALLBG, phraseText } from './cargos.js';
+import { GAMES, CAUSES, CAMPAIGN, ALLBG, phraseText } from './cargos.js';
 import { S, $ } from './state.js';
 import { drawBG } from './backgrounds.js';
 import { render } from './render.js';
@@ -8,7 +8,7 @@ export function updatePhrase() { $('#phrase').textContent = phraseText(S.bg); }
 
 export function buildBgs() {
   const box = $('#bgs'); box.innerHTML = '';
-  (S.tab === 'game' ? GAMES : CAUSES).forEach(b => {
+  (S.tab === 'game' ? GAMES : S.tab === 'cause' ? CAUSES : CAMPAIGN).forEach(b => {
     const btn = document.createElement('button');
     btn.type = 'button'; btn.className = 'bg'; btn.setAttribute('aria-pressed', String(S.bg === b.id));
     const cv = document.createElement('canvas'); cv.width = 180; cv.height = 320; cv.setAttribute('aria-hidden', 'true');
@@ -29,11 +29,13 @@ export function setTab(t) {
   S.tab = t;
   $('#tabGame').setAttribute('aria-pressed', String(t === 'game'));
   $('#tabCause').setAttribute('aria-pressed', String(t === 'cause'));
+  $('#tabCampaign').setAttribute('aria-pressed', String(t === 'campaign'));
   buildBgs();
 }
 
 export function initTabs() {
   $('#tabGame').addEventListener('click', () => setTab('game'));
   $('#tabCause').addEventListener('click', () => setTab('cause'));
+  $('#tabCampaign').addEventListener('click', () => setTab('campaign'));
 }
 export { ALLBG };

@@ -32,7 +32,7 @@ export function buildList(entry, ue) {
     .filter(c => c && c.numero != null && /^\d+$/.test(String(c.numero)))
     .map(c => ({
       id: c.id, num: String(c.numero), urna: c.nomeUrna || '', nome: c.nomeCompleto || '',
-      sigla: (c.partido && c.partido.sigla) || '', col: c.nomeColigacao || '', sit: c.descricaoSituacao || '', ue,
+      sigla: (c.partido && c.partido.sigla) || '', foto: c.foto || '', col: c.nomeColigacao || '', sit: c.descricaoSituacao || '', ue,
       k: norm(c.nomeUrna) + ' ' + norm(c.nomeCompleto)
     }))
     .sort((a, b) => a.urna.localeCompare(b.urna, 'pt-BR'));

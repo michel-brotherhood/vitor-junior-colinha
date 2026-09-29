@@ -63,3 +63,51 @@ export function validar(dados, { permitirVazio = false } = {}) {
   }
   return erros;
 }
+
+/* ---------- colinha.ai (republicador de terceiros; contrato tirado do sync.php do zip enviado) ---------- */
+// Linha de /api/v1/candidatos → registro do app. Campos vistos em sync.php: sq, nome, num, sigla, uf, cargoId, slug, julg, fora, situacaoTse.
+// NÃO verificado contra a API real (host bloqueado no desenvolvimento). `nome` é tratado como nome de urna; o nome completo não vem nesta rota.
+export function candidatoDeColinhaAi(c) {
+  return {
+    id: Number(c.sq), numero: String(c.num).trim(), nomeUrna: String(c.nome || '').trim(), nomeCompleto: '',
+    partido: { sigla: String(c.sigla || '').trim() }, nomeColigacao: '',
+    // `fora` (renúncia, indeferido…) tem prioridade: quem saiu da urna não pode aparecer como deferido.
+    descricaoSituacao: String(c.fora || c.julg || c.situacaoTse || '').trim()
+  };
+}
+
+// cargo do app → { uf da consulta, cargoId da API }
+export const CONSULTAS_COLINHA_AI = [
+  { chave: 'RJ/7', cargo: 7, uf: 'RJ' }, { chave: 'RJ/6', cargo: 6, uf: 'RJ' },
+  { chave: 'RJ/5', cargo: 5, uf: 'RJ' }, { chave: 'RJ/3', cargo: 3, uf: 'RJ' },
+  { chave: 'BR/1', cargo: 1, uf: 'SP' } // sync.php consulta presidente com uf arbitrária
+];
+
+// Pagina /candidatos (offset até `total`). `pega(url)` devolve o JSON; injetado para testar sem rede.
+export async function listarColinhaAi(pega, base, { cargo, uf }) {
+  const out = []; let off = 0, total = Infinity;
+  while (out.length < total) {
+    const j = await pega(`${base}/candidatos?${new URLSearchParams({ cargo, uf, q: '', offset: off })}`);
+    const lista = j.candidatos || [];
+    if (!lista.length) break;
+    total = j.total ?? lista.length;
+    out.push(...lista.filter(c => Number(c.cargoId ?? cargo) === cargo).map(candidatoDeColinhaAi));
+    off += lista.length;
+  }
+  return out;
+}
+
+/* ---------- registros fixos (data/fixos.json) ---------- */
+// Mantém o candidato fixo desta colinha: se a fonte trouxer o número, só acrescenta os campos locais
+// (foto, e nome completo/situação quando a fonte não os tem); se não trouxer, insere o registro fixo.
+export function mesclarFixos(dados, fixos) {
+  const avisos = [];
+  for (const { cargo, registro } of fixos) {
+    const lista = (dados[cargo] = dados[cargo] || { candidatos: [] }).candidatos;
+    const achado = lista.find(c => String(c.numero) === String(registro.numero));
+    if (!achado) { lista.push({ ...registro }); avisos.push(`${cargo} ${registro.numero}: ausente na fonte, mantido o registro fixo`); continue; }
+    if (registro.foto) achado.foto = registro.foto;
+    if (!achado.nomeCompleto && registro.nomeCompleto) achado.nomeCompleto = registro.nomeCompleto;
+  }
+  return avisos;
+}

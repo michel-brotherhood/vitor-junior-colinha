@@ -4,7 +4,7 @@ import { CARGOS, SLOTS, phraseText } from './cargos.js';
 import { S, $ } from './state.js';
 import { status } from './search.js';
 import { photoURLs, logoURL } from './dataStore.js';
-import { drawBG, PAL, rr } from './backgrounds.js';
+import { drawBG, PAL, rr, carregarFundoVitor } from './backgrounds.js';
 
 const imgCache = new Map();
 // Aceita uma URL só (logo) ou uma lista de URLs para tentar em ordem (foto local · foto ao vivo).
@@ -45,7 +45,7 @@ function updateCanvasLabel(){
   $('#out').setAttribute('aria-label','Prévia da sua colinha. '+partes.join('. ')+'.');
 }
 export async function draw(token){
-  if(!fontsReady) fontsReady = Promise.all(['700 80px Rajdhani','600 30px Rajdhani','400 30px CutePixel'].map(f=>document.fonts.load(f).catch(()=>{}))).then(()=>onFontsReady());
+  if(!fontsReady) fontsReady = Promise.all(['700 80px Rajdhani','600 30px Rajdhani','400 30px CutePixel'].map(f=>document.fonts.load(f).catch(()=>{})).concat(carregarFundoVitor(CONFIG.FUNDO_VITOR))).then(()=>onFontsReady());
   await fontsReady;
   const sl = SLOTS;
   const rows = sl.map(s=>{

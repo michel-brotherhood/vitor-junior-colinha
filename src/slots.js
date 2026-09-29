@@ -134,7 +134,7 @@ function cardFor(st) {
   img.src = urls[0];
   const who = document.createElement('div'); who.className = 'who';
   const nu = document.createElement('div'); nu.className = 'nu'; nu.textContent = c.urna;
-  const fu = document.createElement('div'); fu.className = 'fu'; fu.textContent = `${c.nome} · ${c.num} · ${c.sigla}`;
+  const fu = document.createElement('div'); fu.className = 'fu'; fu.textContent = [c.nome, c.num, c.sigla].filter(Boolean).join(' · ');
   const chips = document.createElement('div'); chips.className = 'chips';
   const stt = status(c.sit); if (stt) { const ch = document.createElement('span'); ch.className = 'chip ' + stt.cls; ch.textContent = stt.txt; chips.appendChild(ch); }
   if (st.locked) { const ch = document.createElement('span'); ch.className = 'chip lock'; ch.textContent = 'Número fixo desta colinha'; chips.appendChild(ch); }

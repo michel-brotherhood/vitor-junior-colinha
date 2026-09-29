@@ -1,24 +1,25 @@
 {
   "_meta": {
     "completo": false,
-    "fonte": "Registro único extraído do HTML de referência enviado pelo usuário (Meu_Time_na_Urna.html). NÃO é uma base do TSE.",
+    "fonte": "Material de campanha do candidato (nome de urna, número e partido). NÃO é uma base do TSE.",
     "geradoEm": null,
-    "observacao": "Rode `npm run atualizar-dados` com acesso ao TSE para substituir este arquivo pela base completa."
+    "observacao": "Rode `npm run atualizar-dados` com acesso à fonte para substituir este arquivo pela base completa."
   },
-  "RJ/7": {
+  "RJ/7": { "candidatos": [] },
+  "RJ/6": {
     "candidatos": [
       {
-        "id": 190002543312,
-        "numero": "65021",
-        "nomeUrna": "MÁRCIO FILHO",
-        "nomeCompleto": "MÁRCIO ROBERTO CARVALHO MATHEUS FILHO",
-        "partido": { "sigla": "PCDOB" },
+        "id": "vitor-junior-1200",
+        "numero": "1200",
+        "nomeUrna": "VITOR JUNIOR",
+        "nomeCompleto": "",
+        "partido": { "sigla": "PDT" },
         "nomeColigacao": "",
-        "descricaoSituacao": "Deferido"
+        "descricaoSituacao": "",
+        "foto": "public/img/vitor-junior.jpg"
       }
     ]
   },
-  "RJ/6": { "candidatos": [] },
   "RJ/5": { "candidatos": [] },
   "RJ/3": { "candidatos": [] },
   "BR/1": { "candidatos": [] }
