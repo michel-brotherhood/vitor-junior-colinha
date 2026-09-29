@@ -32,6 +32,19 @@ describe('situação', () => {
   });
 });
 
+describe('situação: textos reais do TSE/colinha.ai', () => {
+  const casos = [
+    ['DEFERIDO', 'ok', 0], ['DEFERIDO EM PRAZO RECURSAL OU COM RECURSO', 'warn', 1], ['PENDENTE DE JULGAMENTO', 'warn', 2],
+    ['INDEFERIDO EM PRAZO RECURSAL OU COM RECURSO', 'bad', 3], ['INDEFERIDO COM RECURSO', 'bad', 3], ['INDEFERIDO', 'bad', 4],
+    ['CANCELADO', 'bad', 5], ['FALECIMENTO', 'bad', 5], ['RENÚNCIA', 'bad', 5], ['PEDIDO NÃO CONHECIDO', 'warn', 5]
+  ];
+  for (const [txt, cls, r] of casos) it(`${txt} → ${cls}, rank ${r}`, () => { expect(status(txt).cls).toBe(cls); expect(rank(txt)).toBe(r); });
+  it('INDEFERIDO com recurso nunca aparece como deferida', () => {
+    expect(status('INDEFERIDO COM RECURSO').txt).not.toMatch(/^Deferida/);
+    expect(status('INDEFERIDO EM PRAZO RECURSAL OU COM RECURSO').short).toBe('INDEFERIDA');
+  });
+});
+
 describe('buildList', () => {
   it('mesmo número repetido fica com a candidatura mais ativa', () => {
     expect(df.byNum.get('9901').id).toBe(1);

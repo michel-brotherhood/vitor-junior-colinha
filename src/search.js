@@ -4,13 +4,19 @@ import { CARGOS, SLOTS, ALLBG } from './cargos.js';
 export const norm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
 
 /* ---------- situação da candidatura ---------- */
+// Textos reais de situação vistos em colinha.ai/api/v1/dados (2026-09-28): DEFERIDO, DEFERIDO EM PRAZO RECURSAL OU COM RECURSO,
+// INDEFERIDO, INDEFERIDO EM PRAZO RECURSAL OU COM RECURSO, PENDENTE DE JULGAMENTO, CANCELADO, FALECIMENTO, RENÚNCIA,
+// PEDIDO NÃO CONHECIDO (e a variante "EM PRAZO RECURSAL…"). INDEFERIDO é testado antes de DEFERIDO, porque contém a palavra.
+const ehIndeferido = s => s.includes('INDEFERIDO');
+const ehDeferidoComRecurso = s => !ehIndeferido(s) && s.includes('DEFERIDO') && s.includes('RECURS');
+
 export function rank(sit) {
   const s = norm(sit);
   if (s === 'DEFERIDO') return 0;
-  if (s.includes('DEFERIDO COM RECURSO')) return 1;
+  if (ehDeferidoComRecurso(s)) return 1;
   if (s.includes('PENDENTE')) return 2;
-  if (s.includes('INDEFERIDO') && s.includes('RECURSO')) return 3;
-  if (s.includes('INDEFERIDO')) return 4;
+  if (ehIndeferido(s) && s.includes('RECURS')) return 3;
+  if (ehIndeferido(s)) return 4;
   return 5;
 }
 
@@ -18,9 +24,9 @@ export function status(sit) {
   const s = norm(sit);
   if (!s) return null;
   if (s === 'DEFERIDO') return { cls: 'ok', txt: 'Candidatura deferida' };
-  if (s.includes('DEFERIDO COM RECURSO')) return { cls: 'warn', txt: 'Deferida, com recurso' };
+  if (ehIndeferido(s)) return { cls: 'bad', txt: s.includes('RECURS') ? 'Registro indeferido, com recurso possível: os votos podem ser anulados' : 'Registro indeferido: os votos podem ser anulados', short: 'INDEFERIDA' };
+  if (ehDeferidoComRecurso(s)) return { cls: 'warn', txt: 'Deferida, com recurso' };
   if (s.includes('PENDENTE')) return { cls: 'warn', txt: 'Registro ainda em julgamento' };
-  if (s.includes('INDEFERIDO')) return { cls: 'bad', txt: 'Registro indeferido: os votos podem ser anulados', short: 'INDEFERIDA' };
   if (s.includes('RENUNCIA')) return { cls: 'bad', txt: 'Renunciou à candidatura', short: 'RENUNCIOU' };
   if (s.includes('CANCEL') || s.includes('CASSAD') || s.includes('FALEC')) return { cls: 'bad', txt: sit, short: norm(sit) };
   return { cls: 'warn', txt: sit };
