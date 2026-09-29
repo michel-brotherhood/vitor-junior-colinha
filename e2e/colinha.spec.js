@@ -329,8 +329,8 @@ test.describe('exportação', () => {
     await expect(page.locator('#slots')).toBeHidden();
     await expect(page.locator('#share')).toBeHidden();
     const w = await page.locator('#printImg').boundingBox();
-    expect(Math.round(w.width)).toBeGreaterThan(280); // ~8 cm a 96 dpi ≈ 302 px
-    expect(Math.round(w.width)).toBeLessThan(320);
+    expect(Math.round(w.width)).toBeGreaterThan(330); // 9 cm a 96 dpi ≈ 340 px
+    expect(Math.round(w.width)).toBeLessThan(350);
     const pdf = await page.pdf();
     expect(pdf.length).toBeGreaterThan(5000);
   });
@@ -368,5 +368,124 @@ test.describe('layout e acessibilidade', () => {
     expect(focusOutline).not.toBe('none');
     for (let i = 0; i < 40 && !(await page.locator('#share').evaluate(e => e === document.activeElement)); i++) await page.keyboard.press('Tab');
     await expect(page.locator('#share')).toBeFocused();
+  });
+});
+
+test.describe('auditoria: responsividade e usabilidade', () => {
+  const inViewport = async (page, sel) => page.locator(sel).evaluate(e => { const b = e.getBoundingClientRect(); return b.top >= 0 && b.bottom <= innerHeight; });
+
+  for (const [w, h] of [[1280, 720], [1024, 700], [1366, 768]]) {
+    test(`notebook ${w}×${h}: as 4 ações ficam dentro da janela em qualquer ponto da rolagem`, async ({ page }) => {
+      await page.setViewportSize({ width: w, height: h });
+      await withFixture(page); await page.goto('/'); await ready(page);
+      for (const y of [0, 300, 700, 1100, 1500]) {
+        await page.evaluate(y => scrollTo(0, y), y);
+        await page.waitForTimeout(80);
+        // no topo da página a prévia começa abaixo do cabeçalho; depois de rolar, tudo deve caber
+        if (y === 0) continue;
+        for (const s of ['#share', '#dl', '#print', '#link']) expect(await inViewport(page, s), `${s} fora da janela em scrollY=${y}`).toBe(true);
+      }
+    });
+  }
+
+  test('tablet 768: duas colunas e prévia estreita', async ({ page }) => {
+    await page.setViewportSize({ width: 768, height: 1024 });
+    await withFixture(page); await page.goto('/'); await ready(page);
+    const a = await page.locator('main').boundingBox(), c = await page.locator('#out').boundingBox();
+    expect(c.x).toBeGreaterThan(a.x + a.width - 1);
+    expect(c.width).toBeLessThanOrEqual(300);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+
+  test('celular em paisagem 844×390: prévia limitada, sem rolagem lateral', async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 844, height: 390 }, isMobile: true, hasTouch: true });
+    const page = await ctx.newPage(); await withFixture(page); await page.goto('/'); await ready(page);
+    const c = await page.locator('#out').boundingBox();
+    expect(c.width).toBeLessThanOrEqual(300);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await ctx.close();
+  });
+
+  test('celular 390×844: barra fixa aparece, leva à prévia e some quando ela está na tela', async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const page = await ctx.newPage(); await withFixture(page); await page.goto('/'); await ready(page);
+    const dock = page.locator('#dock');
+    await expect(dock).toBeVisible();
+    const box = await dock.boundingBox();
+    expect(Math.round(box.y + box.height)).toBe(844); // colada no rodapé
+    for (const el of await dock.locator('.btn').all()) expect((await el.boundingBox()).height).toBeGreaterThanOrEqual(44);
+    await dock.getByRole('link', { name: 'Ver prévia' }).tap();
+    await expect.poll(() => page.evaluate(() => document.querySelector('#out').getBoundingClientRect().top < innerHeight * 0.6)).toBe(true);
+    await expect(dock).toBeHidden(); // visibility:hidden enquanto a prévia aparece
+    await page.locator('.voltar').tap();
+    await expect.poll(() => page.evaluate(() => { const t = document.querySelector('#h1s').getBoundingClientRect().top; return t > -8 && t < innerHeight * 0.5; })).toBe(true);
+    await expect(dock).toBeVisible();
+    await ctx.close();
+  });
+
+  test('compartilhar pela barra fixa usa o mesmo fluxo do botão principal', async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const page = await ctx.newPage(); await withFixture(page); await page.goto('/'); await ready(page);
+    await page.evaluate(() => { navigator.canShare = () => true; navigator.share = async d => { window.__s = d.files[0].name; }; });
+    await page.locator('#share2').tap();
+    await expect.poll(() => page.evaluate(() => window.__s)).toBe('colinha-2026-rj.png');
+    await ctx.close();
+  });
+
+  test('barra fixa não existe no desktop', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await withFixture(page); await page.goto('/'); await ready(page);
+    await expect(page.locator('#dock')).toBeHidden();
+    await expect(page.locator('.voltar')).toBeHidden();
+  });
+
+  test('× nativo do type=search oculto; fica só o botão de limpar do app', async ({ page }) => {
+    await withFixture(page); await page.goto('/'); await ready(page);
+    // getComputedStyle não enxerga pseudo-elementos internos do WebKit; confere a regra no CSS carregado
+    // (a ausência do × nativo também foi conferida por captura de tela).
+    const regra = await page.evaluate(() => [...document.styleSheets].flatMap(s => [...s.cssRules]).some(r => r.cssText.includes('::-webkit-search-cancel-button') && r.cssText.includes('display: none')));
+    expect(regra).toBe(true);
+    await expect(page.locator('#slot-de .clear')).toBeVisible();
+  });
+
+  test('alvos de toque e contraste do texto secundário', async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const page = await ctx.newPage(); await withFixture(page); await page.goto('/'); await ready(page);
+    await inp(page, 'de').fill('jose');
+    const menores = await page.evaluate(() => [...document.querySelectorAll('button:not([hidden]), [role=option], .dock .btn')]
+      .filter(e => { const b = e.getBoundingClientRect(), s = getComputedStyle(e); return b.width > 0 && s.visibility !== 'hidden' && b.height < 44; })
+      .map(e => (e.id || e.className || e.tagName) + ' ' + Math.round(e.getBoundingClientRect().height)));
+    expect(menores).toEqual([]);
+    // --faint sobre o painel mais claro: razão de contraste >= 4,5
+    const razao = await page.evaluate(() => {
+      const cs = getComputedStyle(document.documentElement);
+      const parse = v => v.match(/[\d.]+/g).map(Number);
+      const faint = parse(cs.getPropertyValue('--faint')), fundo = [0x21, 0x1f, 0x38];
+      const mix = faint.slice(0, 3).map((v, i) => v * faint[3] + fundo[i] * (1 - faint[3]));
+      const L = c => { const f = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
+      const a = L(mix), b = L(fundo); return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+    });
+    expect(razao).toBeGreaterThanOrEqual(4.5);
+    await ctx.close();
+  });
+
+  test('aba Campanha: miniatura única centralizada e sem pedido de logos', async ({ page }) => {
+    const falhas = [];
+    page.on('response', r => { if (r.url().includes('/logos/')) falhas.push(r.url()); });
+    await withFixture(page); await page.goto('/'); await ready(page);
+    await inp(page, 'de').fill('99020');
+    await expect(page.locator('#bgs')).toHaveClass(/single/);
+    const g = await page.locator('#bgs .bg').boundingBox();
+    expect(g.width).toBeGreaterThanOrEqual(120);
+    expect(falhas).toEqual([]);
+  });
+
+  test('impressão a 9 cm', async ({ page }) => {
+    await withFixture(page); await page.goto('/'); await ready(page);
+    await page.evaluate(() => { window.print = () => {}; });
+    await page.locator('#print').click();
+    await page.emulateMedia({ media: 'print' });
+    const w = (await page.locator('#printImg').boundingBox()).width;
+    expect(Math.round(w)).toBeGreaterThan(330); expect(Math.round(w)).toBeLessThan(350); // 9 cm ≈ 340 px
   });
 });

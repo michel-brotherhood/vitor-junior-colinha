@@ -20,5 +20,6 @@ export const CONFIG = {
   SITE: '',
   LOGO_RODAPE: base + 'public/img/pdt-branco.png', // logo branco do PDT, para fundos escuros
   FUNDO_VITOR: base + 'public/img/fundo-vitor.webp',
-  LOGOS: base + 'logos/'
+  LOGOS: base + 'logos/',
+  LOGOS_DISPONIVEIS: false // sem a pasta logos/, evita 404 por candidato e usa a pílula "NN · SIGLA"
 };

@@ -81,7 +81,7 @@ export async function draw(token){
   c.fillText(`Rio de Janeiro · 1º turno · 4 de outubro de 2026`,hx+pad,M+hh-pad+6);
 
   // linhas
-  const footH=150; const footY=H-M-footH;
+  const footH=162; const footY=H-M-footH;
   const top=M+hh+30, gap=22, n=rows.length; const avail=footY-26-top;
   const rh=Math.min(n===1?300:200,(avail-gap*(n-1))/n); const y0 = n===1? top+(avail-rh)/2 : top;
   rows.forEach((r,i)=>{
@@ -103,8 +103,8 @@ export async function draw(token){
       if(!r.empty){c.fillStyle='#121122';c.font=`700 ${Math.round(bh*.78)}px Rajdhani,sans-serif`;c.textAlign='center';c.fillText(r.num[d]||'',kx+bw/2,by+bh*.78);c.textAlign='left';}}
     // textos
     const tx=px+pw+24, tW=bx-24-tx;
-    c.fillStyle=acc;c.font='400 24px CutePixel,monospace';c.fillText(`${i+1} · ${r.label.toUpperCase()}`,tx,y+p+26);
-    if(r.empty){c.fillStyle='rgba(247,247,247,.5)';c.font='600 38px Rajdhani,sans-serif';c.fillText('Ainda vou decidir',tx,y+rh/2+22);return;}
+    c.fillStyle=acc;const lfs=fitFont(c,`${i+1} · ${r.label.toUpperCase()}`,400,'CutePixel,monospace',(r.empty?(W-2*M):bx-24-tx)-8,30,22);c.fillText(`${i+1} · ${r.label.toUpperCase()}`,tx,y+p+26);
+    if(r.empty){c.fillStyle='rgba(247,247,247,.62)';c.font='600 42px Rajdhani,sans-serif';c.fillText('Ainda vou decidir',tx,y+rh/2+22);return;}
     const nfs=fitFont(c,r.name,700,'Rajdhani,sans-serif',tW,56,34);c.fillStyle='#F7F7F7';c.fillText(ellipsize(c,r.name,tW),tx,y+p+26+nfs*.95+4);
     // partido
     const by2=y+rh-p-8;
@@ -120,8 +120,8 @@ export async function draw(token){
   const site = CONFIG.SITE || location.host;
   c.fillStyle=acc2;c.font='400 30px CutePixel,monospace';c.fillText(`Monte a sua: ${site}`,M+30,footY+90);
   // identificação do responsável e logo do partido (obrigatórios em material de campanha)
-  c.fillStyle='rgba(247,247,247,.78)';c.font='600 24px Rajdhani,sans-serif';
-  c.fillText(ellipsize(c,CONFIG.ASSINATURA_IMAGEM,W-2*M-60),M+30,footY+130);
+  c.fillStyle='rgba(247,247,247,.86)';c.font='600 30px Rajdhani,sans-serif';
+  c.fillText(ellipsize(c,CONFIG.ASSINATURA_IMAGEM,W-2*M-60),M+30,footY+140);
   if(logoRodape){const lh=54,lw=lh*logoRodape.width/logoRodape.height;c.drawImage(logoRodape,W-M-30-lw,footY+22,lw,lh);}
   onDrawn(token);
 }

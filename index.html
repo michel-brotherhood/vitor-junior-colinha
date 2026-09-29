@@ -54,8 +54,9 @@
       </section>
     </main>
 
-    <aside class="preview" aria-label="Prévia da colinha">
+    <aside class="preview" id="previa" aria-label="Prévia da colinha">
       <div class="frame">
+        <a class="voltar" href="#h1s">↑ Voltar aos campos</a>
         <canvas id="out" width="1080" height="1920" role="img" aria-label="Prévia da sua colinha"></canvas>
         <div class="actions">
           <button class="btn primary" id="share" type="button">Compartilhar colinha</button>
@@ -75,6 +76,10 @@
     <img class="foot-logo" src="public/img/pdt-branco.png" alt="PDT" width="88" height="40">
   </footer>
 </div>
+<nav class="dock" id="dock" aria-label="Ações rápidas">
+  <a class="btn" href="#previa">Ver prévia</a>
+  <button class="btn primary" id="share2" type="button">Compartilhar colinha</button>
+</nav>
 <img id="printImg" alt="Colinha para impressão" width="1080" height="1920">
 <script type="module" src="src/main.js"></script>
 </body>

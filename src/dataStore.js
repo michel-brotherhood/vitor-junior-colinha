@@ -41,4 +41,4 @@ export const photoURLs = c => {
   if (CONFIG.USAR_PROXY_TSE) urls.push(`${CONFIG.API}/arquivo/img/${CONFIG.ELEICAO}/${c.id}/${c.ue}`);
   return urls;
 };
-export const logoURL = sigla => sigla ? CONFIG.LOGOS + encodeURIComponent(sigla.replace(/\s+/g, '').toUpperCase()) + '.png' : null;
+export const logoURL = sigla => CONFIG.LOGOS_DISPONIVEIS && sigla ? CONFIG.LOGOS + encodeURIComponent(sigla.replace(/\s+/g, '').toUpperCase()) + '.png' : null;

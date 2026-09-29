@@ -61,6 +61,15 @@ async function print() {
 export function initActions() {
   $('#dl').addEventListener('click', download);
   $('#share').addEventListener('click', share);
+  $('#share2').addEventListener('click', share);
   $('#link').addEventListener('click', copyLink);
   $('#print').addEventListener('click', print);
+}
+
+// Barra fixa do celular: some enquanto a prévia (quadro inteiro de ações) está visível.
+export function initDock() {
+  const dock = $('#dock'), frame = document.querySelector('.frame');
+  if (!dock || !frame || !('IntersectionObserver' in window)) return;
+  new IntersectionObserver(([e]) => { dock.toggleAttribute('data-off', e.intersectionRatio > 0.6 || (e.isIntersecting && e.boundingClientRect.height > innerHeight && e.intersectionRatio > 0.3)); },
+    { threshold: [0, 0.3, 0.6, 1] }).observe(frame);
 }

@@ -8,7 +8,9 @@ export function updatePhrase() { $('#phrase').textContent = phraseText(S.bg); }
 
 export function buildBgs() {
   const box = $('#bgs'); box.innerHTML = '';
-  (S.tab === 'game' ? GAMES : S.tab === 'cause' ? CAUSES : CAMPAIGN).forEach(b => {
+  const lista = S.tab === 'game' ? GAMES : S.tab === 'cause' ? CAUSES : CAMPAIGN;
+  box.classList.toggle('single', lista.length === 1);
+  lista.forEach(b => {
     const btn = document.createElement('button');
     btn.type = 'button'; btn.className = 'bg'; btn.setAttribute('aria-pressed', String(S.bg === b.id));
     const cv = document.createElement('canvas'); cv.width = 180; cv.height = 320; cv.setAttribute('aria-hidden', 'true');

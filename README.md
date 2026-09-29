@@ -70,12 +70,21 @@ O rodapé mantém o texto "atualizados periodicamente"; isso só é verdade se a
 - Link: `?v=<df>-<de>-<s1>-<s2>-<go>-<pr>&f=<fundo>`. Só números entram no link; `f` é validado. **Sem persistência local**: recarregar sem o `?v=` zera os campos.
 - Nenhum dado pessoal é coletado, armazenado ou enviado; sem métricas nem cookies.
 
+## Layout e usabilidade (auditoria)
+
+- Três faixas: coluna única até 719 px (prévia ao final, barra fixa "Ver prévia / Compartilhar" enquanto ela não está na tela, link "Voltar aos campos"), duas colunas com prévia de 300 px de 720 a 919 px e prévia de 380 px a partir de 920 px.
+- A altura da prévia acompanha a janela (`--acoes` em `public/styles.css`), então os quatro botões cabem em notebooks de 720 px.
+- Impressão em 9 cm de largura (a referência usa 8 cm) e textos mínimos maiores na imagem, para o CNPJ e os rótulos ficarem legíveis no papel.
+- `--faint` com contraste ≥ 4,5:1; alvos de toque ≥ 44 px; o × nativo do `type=search` fica oculto.
+- Sem a pasta `logos/`, o app não pede logos (`CONFIG.LOGOS_DISPONIVEIS = false`) e usa a pílula "NN · SIGLA".
+- `og:image` e o ícone usam caminho relativo; defina URLs absolutas no deploy para as redes sociais.
+
 ## Diferenças em relação ao HTML de referência
 
 - Fonte pixel Silkscreen (OFL) no lugar de `CutePixel.ttf` (licença não verificada); Rajdhani self-hosted.
 - Sem logos de partidos (pílula "NN · SIGLA"), sem rota `/tse` (`CONFIG.USAR_PROXY_TSE = false`).
 - Aviso de base incompleta, ARIA combobox/listbox, região `aria-live`, `aria-label` descritivo no canvas.
-- Link saneado; retry de carregamento funcional; exportar/imprimir aguarda o desenho pendente.
+- Impressão a 9 cm em vez de 8 cm. Link saneado; retry de carregamento funcional; exportar/imprimir aguarda o desenho pendente.
 
 ## Pendências
 

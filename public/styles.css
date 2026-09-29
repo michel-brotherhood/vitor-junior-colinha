@@ -7,7 +7,7 @@
 :root{
   color-scheme:dark;
   --bg:#121122; --panel:#19182b; --panel2:#211f38; --line:rgba(247,247,247,.12); --line2:rgba(247,247,247,.22);
-  --ink:#F7F7F7; --muted:rgba(247,247,247,.68); --faint:rgba(247,247,247,.45);
+  --ink:#F7F7F7; --muted:rgba(247,247,247,.68); --faint:rgba(247,247,247,.6);
   --accent:#FF6A00; --accent-soft:rgba(255,106,0,.12);
   --ok:#3BE38A; --warn:#FFC845; --bad:#FF5A6E;
   --pixel:CutePixel,"Courier New",monospace;
@@ -42,7 +42,9 @@ button,input,select{font:inherit;color:inherit}
 
 /* grade principal */
 .grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:28px;align-items:start}
-@media (max-width:920px){.grid{grid-template-columns:minmax(0,1fr)}}
+/* 3 faixas: coluna única (celular), prévia de 300 px (tablet), prévia de 380 px (desktop) */
+@media (max-width:919px){.grid{grid-template-columns:minmax(0,1fr) 300px;gap:20px}}
+@media (max-width:719px){.grid{grid-template-columns:minmax(0,1fr)}}
 .step{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:18px}
 .step-h{display:flex;align-items:baseline;gap:12px;margin-bottom:14px}
 .step-n{font:400 15px/1 var(--pixel);color:var(--bg);background:var(--accent);border-radius:6px;padding:6px 8px}
@@ -54,6 +56,8 @@ select,input[type=text],input[type=search]{
 }
 select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--accent) 50%),linear-gradient(135deg,var(--accent) 50%,transparent 50%);background-position:calc(100% - 20px) 55%,calc(100% - 14px) 55%;background-size:6px 6px;background-repeat:no-repeat;padding-right:40px}
 input::placeholder{color:var(--faint);font-weight:500}
+/* o app já tem seu próprio botão de limpar; esconde o × nativo do type=search */
+input[type=search]::-webkit-search-cancel-button,input[type=search]::-webkit-search-decoration{-webkit-appearance:none;appearance:none;display:none}
 
 /* votos */
 .slots{display:flex;flex-direction:column;gap:12px}
@@ -89,7 +93,7 @@ input::placeholder{color:var(--faint);font-weight:500}
 
 /* fundos */
 .toggle{display:inline-flex;border:1px solid var(--line2);border-radius:999px;padding:3px;gap:2px;margin-bottom:14px;flex-wrap:wrap}
-.toggle button{border:0;background:none;border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer;color:var(--muted)}
+.toggle button{border:0;background:none;border-radius:999px;padding:8px 14px;min-height:44px;font-weight:700;cursor:pointer;color:var(--muted)}
 .toggle button[aria-pressed=true]{background:var(--accent);color:var(--bg)}
 .bgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
 .bg{border:2px solid transparent;border-radius:10px;background:var(--bg);padding:0;cursor:pointer;overflow:hidden;display:flex;flex-direction:column}
@@ -102,7 +106,10 @@ input::placeholder{color:var(--faint);font-weight:500}
 /* prévia */
 .preview{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px)}
 .frame{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px}
-#out{width:100%;max-width:100%;aspect-ratio:9/16;display:block;border-radius:8px;background:#0c0b18}
+/* A altura do canvas acompanha a janela: os 4 botões cabem sempre (--acoes = altura de botões + aviso + margens do quadro) */
+.preview{--acoes:330px}
+#out{display:block;width:auto;height:auto;max-width:100%;max-height:max(320px,calc(100dvh - var(--acoes)));aspect-ratio:9/16;margin-inline:auto;border-radius:8px;background:#0c0b18}
+@media (max-width:719px){.frame{max-width:420px;margin-inline:auto}.preview{position:static}}
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .btn{border:1px solid var(--line2);background:var(--panel2);border-radius:10px;padding:12px 10px;font-weight:700;font-size:16px;cursor:pointer;letter-spacing:.02em}
 .btn:hover{border-color:var(--ink)}
@@ -120,13 +127,13 @@ footer.foot{margin-top:28px;padding-top:18px;border-top:1px solid var(--line);co
 @media print{
   body{background:#fff;padding:0}
   body > *:not(#printImg){display:none!important}
-  #printImg{display:block;width:8cm;margin:0}
+  #printImg{display:block;width:9cm;margin:0}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
 /* ---- acréscimos sobre a referência (acessibilidade) ---- */
 .sr-only{position:absolute!important;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-.sugs [role=option]{display:flex;gap:12px;align-items:baseline;width:100%;border-radius:8px;padding:9px 10px;cursor:pointer}
+.sugs [role=option]{display:flex;gap:12px;align-items:baseline;width:100%;border-radius:8px;padding:9px 10px;min-height:44px;cursor:pointer}
 .sugs [role=option]:hover,.sugs [role=option].is-active{background:var(--panel2)}
 .sugs [role=option].is-active{outline:2px solid var(--accent);outline-offset:-2px}
 .sugs [role=option] .n{font:400 17px/1 var(--pixel);color:var(--accent);min-width:4.2em;font-variant-numeric:tabular-nums}
@@ -135,3 +142,21 @@ footer.foot{margin-top:28px;padding-top:18px;border-top:1px solid var(--line);co
 .banner.warn{background:rgba(255,200,69,.09);border-color:rgba(255,200,69,.55)}
 .slot input:disabled{opacity:1;-webkit-text-fill-color:var(--ink);cursor:not-allowed}
 .btn:disabled{opacity:.6;cursor:progress}
+
+/* fundo único (aba Campanha): miniatura maior e centralizada */
+.bgs.single{grid-template-columns:minmax(120px,168px);justify-content:center}
+.bgs.single .bg span{font-size:15px;padding:10px 6px}
+
+/* barra fixa de ações (só no celular, enquanto a prévia não está na tela) */
+.dock{display:none}
+.voltar{display:none}
+@media (max-width:719px){
+  html{scroll-behavior:smooth}
+  body{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))}
+  .dock{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:1fr 1.3fr;gap:8px;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(18,17,34,.94);border-top:1px solid var(--line2);backdrop-filter:blur(8px);transition:transform .18s ease}
+  .dock[data-off]{transform:translateY(110%);visibility:hidden}
+  .dock .btn{min-height:48px;text-align:center;text-decoration:none;color:var(--ink);display:flex;align-items:center;justify-content:center}
+  .dock .btn.primary{color:var(--bg);grid-column:auto}
+  .voltar{display:inline-flex;align-items:center;min-height:44px;margin:0 0 10px;color:var(--accent);font-weight:700;text-decoration:none}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}.dock{transition:none}}
