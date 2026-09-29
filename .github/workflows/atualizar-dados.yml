@@ -1,0 +1,63 @@
+name: Atualizar dados
+
+# Consulta a fonte de candidaturas a partir de um runner do GitHub (rede aberta) e, se a validação passar,
+# grava data/candidatos.json. Manual (Run workflow) ou diário.
+on:
+  workflow_dispatch:
+    inputs:
+      gravar:
+        description: 'Gravar data/candidatos.json e fazer commit (falso = só diagnóstico e dry-run)'
+        type: boolean
+        default: false
+      fonte:
+        description: 'Fonte da importação'
+        type: choice
+        default: colinha-ai
+        options: [colinha-ai]
+  schedule:
+    - cron: '17 8 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: atualizar-dados
+  cancel-in-progress: false
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Diagnóstico das fontes (somente leitura)
+        run: node scripts/diagnostico-fontes.mjs
+        continue-on-error: true
+
+      - name: Testes do importador
+        run: |
+          npm ci
+          npx vitest run tests/tse.test.js
+
+      - name: Importação (dry-run)
+        id: dry
+        run: node scripts/atualizar-dados.mjs --colinha-ai --dry-run
+        continue-on-error: true
+
+      - name: Importação (gravar)
+        if: ${{ (github.event_name == 'schedule' || inputs.gravar) && steps.dry.outcome == 'success' }}
+        run: node scripts/atualizar-dados.mjs --colinha-ai
+
+      - name: Commit da base
+        if: ${{ (github.event_name == 'schedule' || inputs.gravar) && steps.dry.outcome == 'success' }}
+        run: |
+          if git diff --quiet -- data/candidatos.json; then echo "Sem mudanças."; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/candidatos.json
+          git commit -m "Atualiza data/candidatos.json ($(date -u +%Y-%m-%d))"
+          git push
