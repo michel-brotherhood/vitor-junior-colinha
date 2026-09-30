@@ -16,7 +16,7 @@ npm run e2e          # testes de navegador (Playwright + Chromium)
 ```
 
 Se o Playwright não achar o Chromium: `CHROMIUM_PATH=/caminho/chrome npm run e2e`.
-Para publicar, copie `index.html`, `public/`, `src/` e `data/` para qualquer hospedagem estática (caminhos relativos à pasta da página). `CONFIG.SITE` (em `src/config.js`) define o endereço impresso na imagem; vazio, usa o endereço onde o app estiver publicado.
+Para publicar, copie `index.html`, `public/`, `src/` e `data/` para qualquer hospedagem estática (caminhos relativos à pasta da página). `CONFIG.SITE` (em `src/config.js`) define o endereço impresso na imagem: hoje `colinha.deputadovitorjunior.com.br` (o app precisa ser servido na raiz desse subdomínio, porque `canonical`, `og:url` e `og:image` em `index.html` usam URLs absolutas dele). Se o endereço mudar, troque esses dois lugares.
 
 ## Estrutura
 
@@ -102,4 +102,4 @@ O importador cruza pelo `SQ`, confere os totais entre as duas fontes e registra 
 ## Pendências
 
 - Confirmar direito de uso das fotos de urna copiadas do colinha.ai.
-- Definir `CONFIG.SITE` (endereço final) antes do deploy; sem ele, a imagem omite a linha "Monte a sua".
+- Publicar em `colinha.deputadovitorjunior.com.br` (já configurado). No servidor: ativar compressão gzip/brotli (o JSON de candidatos cai de 411 KB para ~57 KB) e cache longo para `public/` e `data/fotos/`.

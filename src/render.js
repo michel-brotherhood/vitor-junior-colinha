@@ -131,7 +131,7 @@ export async function draw(token){
   c.fillText(ellipsize(c,'Celular não entra na cabine: leve impresso ou anotado.',W-2*M-60),fx,footY+linhas[0]);
   if(site){
     const txt=`Monte a sua: ${site}`;
-    fitFont(c,txt,400,'CutePixel,monospace',maxW,30,20);
+    fitFont(c,txt,700,'Rajdhani,sans-serif',maxW,30,22);
     c.fillStyle=acc2;c.fillText(ellipsize(c,txt,maxW),fx,footY+linhas[1]);
   }
   // identificação do responsável (obrigatória em material de campanha)

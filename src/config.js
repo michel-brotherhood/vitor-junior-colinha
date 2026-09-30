@@ -17,7 +17,7 @@ export const CONFIG = {
   // Linha curta impressa no rodapé da imagem.
   ASSINATURA_IMAGEM: 'Iniciativa de Vitor Júnior 1200 (PDT) · CNPJ 68.441.810/0001-17',
   // Endereço impresso no fim da imagem. Vazio = usa o endereço em que o app está publicado.
-  SITE: '',
+  SITE: 'colinha.deputadovitorjunior.com.br',
   LOGO_RODAPE: base + 'public/img/pdt-branco.png', // logo branco do PDT, para fundos escuros
   // Aba "Fundo": id -> imagem (9:16). O id 'vitor' é o padrão (laranja da campanha).
   FUNDOS: { vitor: base + 'public/img/fundo-vitor.webp', azul: base + 'public/img/fundo-azul.webp', colorido: base + 'public/img/fundo-colorido.webp' },
