@@ -594,3 +594,83 @@ test.describe('auditoria: responsividade e usabilidade', () => {
     expect(Math.round(w)).toBeGreaterThan(330); expect(Math.round(w)).toBeLessThan(350); // 9 cm ≈ 340 px
   });
 });
+
+/* ---------- auditoria geral: contraste da imagem, paisagem, aba com fundo escolhido ---------- */
+test.describe('auditoria 2: imagem exportada, paisagem e abas', () => {
+  // Intercepta fillText do canvas da prévia (sem desenhar o texto) e mede, pixel a pixel, o contraste real atrás de cada texto.
+  const medir = async (page, url) => {
+    await page.addInitScript(() => {
+      const orig = CanvasRenderingContext2D.prototype.fillText; window.__rec = null;
+      CanvasRenderingContext2D.prototype.fillText = function (t, x, y, mw) {
+        if (window.__rec && this.canvas.id === 'out') { window.__rec.push({ t: String(t), font: this.font, fill: String(this.fillStyle), a: this.globalAlpha, x, y, w: this.measureText(String(t)).width, al: this.textAlign }); return; }
+        return orig.call(this, t, x, y, mw);
+      };
+    });
+    await page.goto(url); await page.waitForTimeout(1200);
+    await page.evaluate(() => { window.__rec = []; document.querySelector('#bgs .bg[aria-pressed=true]').click(); });
+    await page.waitForTimeout(900);
+    return page.evaluate(() => {
+      const cv = document.querySelector('#out'), c = cv.getContext('2d');
+      const lum = ([r, g, b]) => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(r) + .7152 * f(g) + .0722 * f(b); };
+      const k = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+      const cor = s => { k.clearRect(0, 0, 1, 1); k.fillStyle = '#000'; k.fillStyle = s; k.fillRect(0, 0, 1, 1); return [...k.getImageData(0, 0, 1, 1).data.slice(0, 3)]; };
+      return window.__rec.map(r => {
+        const fs = +/(\d+(?:\.\d+)?)px/.exec(r.font)[1]; const m = /rgba\(([^)]*)\)/.exec(r.fill); const a = r.a * (m ? +m[1].split(',')[3] : 1); const fg = cor(r.fill);
+        const x0 = Math.max(0, Math.round(r.al === 'center' ? r.x - r.w / 2 : r.al === 'right' ? r.x - r.w : r.x)), y0 = Math.max(0, Math.round(r.y - fs * .72));
+        const d = c.getImageData(x0, y0, Math.max(2, Math.min(Math.round(r.w), 1080 - x0)), Math.round(fs * .8)).data; const cr = [];
+        for (let i = 0; i < d.length; i += 12) { const bg = [d[i], d[i + 1], d[i + 2]]; const L1 = lum(fg.map((v, j) => a * v + (1 - a) * bg[j])), L2 = lum(bg); cr.push((Math.max(L1, L2) + .05) / (Math.min(L1, L2) + .05)); }
+        cr.sort((p, q) => p - q); return { t: r.t, p5: cr[Math.floor(cr.length * .05)] };
+      });
+    });
+  };
+  const IDS = ['vitor', 'azul', 'colorido', ...Array.from({ length: 12 }, (_, i) => 'c' + String(i + 1).padStart(2, '0'))];
+
+  test('imagem: todo texto ≥ 4,5:1 e "Esse é o meu time:" sempre inteiro (15 fundos, colinha vazia)', async ({ page }) => {
+    test.setTimeout(120000);
+    for (const id of IDS) {
+      const r = await medir(page, `/?f=${id}&v=1200`);
+      const fracos = r.filter(x => x.p5 < 4.5).map(x => `${x.t} ${x.p5.toFixed(2)}`);
+      expect(fracos, `contraste em ${id}`).toEqual([]);
+      expect(r.filter(x => x.t === 'Esse é o meu time:'), `fecho em ${id}`).toHaveLength(1);
+      await page.reload();
+    }
+  });
+
+  test('imagem: colinha cheia, com selo de candidatura irregular, também ≥ 4,5:1', async ({ page }) => {
+    test.setTimeout(60000);
+    for (const id of ['vitor', 'azul', 'colorido', 'c10']) {
+      const r = await medir(page, `/?f=${id}&v=1200-45200-555-131-55-22`);
+      expect(r.some(x => x.t.startsWith('⚠')), 'selo presente').toBe(true);
+      expect(r.filter(x => x.p5 < 4.5).map(x => `${x.t} ${x.p5.toFixed(2)}`), `contraste em ${id}`).toEqual([]);
+      await page.reload();
+    }
+  });
+
+  test('celular deitado (844×390): barra com Compartilhar sempre visível e sem cobrir o fim da página', async ({ page }) => {
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.goto('/?v=1200-45200'); await expect(page.locator('#share2')).toBeVisible();
+    const max = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+    for (let y = 0; y <= max; y += Math.max(1, Math.floor(max / 12))) {
+      await page.evaluate(v => scrollTo(0, v), y);
+      const b = await page.locator('#share2').boundingBox();
+      expect(b.y).toBeGreaterThanOrEqual(0); expect(b.y + b.height).toBeLessThanOrEqual(390); expect(b.height).toBeGreaterThanOrEqual(44);
+    }
+    await page.evaluate(() => scrollTo({ top: 1e7, behavior: 'instant' })); await page.waitForTimeout(150); // fim da página: o último bloco (rodapé) não fica atrás da barra
+    const f = await page.locator('footer').boundingBox(); const d = await page.locator('#dock').boundingBox();
+    expect(f.y + f.height).toBeLessThanOrEqual(d.y + 1);
+    await page.setViewportSize({ width: 1280, height: 720 }); // notebook: sem barra
+    await expect(page.locator('#dock')).toBeHidden();
+  });
+
+  test('aba com o fundo escolhido ganha um ponto; a outra não', async ({ page }) => {
+    await withFixture(page); await page.goto('/'); await ready(page);
+    await expect(page.locator('#tabFundo')).toHaveAttribute('data-tem-fundo', '');
+    await expect(page.locator('#tabCause')).not.toHaveAttribute('data-tem-fundo', '');
+    await page.locator('#tabCause').click(); await page.locator('#bgs .bg').nth(4).click();
+    await page.locator('#tabFundo').click();
+    await expect(page.locator('#tabCause')).toHaveAttribute('data-tem-fundo', '');
+    await expect(page.locator('#tabCause')).toHaveAccessibleName('Causa (fundo escolhido)');
+    await expect(page.locator('#tabFundo')).not.toHaveAttribute('data-tem-fundo', '');
+    await expect(page.locator('#bgs .bg[aria-pressed=true]')).toHaveCount(0); // grade do Fundo sem marcação, mas a aba Causa indica onde está
+  });
+});

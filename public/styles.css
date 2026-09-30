@@ -95,10 +95,13 @@ input[type=search]::-webkit-search-cancel-button,input[type=search]::-webkit-sea
 .toggle{display:inline-flex;border:1px solid var(--line2);border-radius:999px;padding:3px;gap:2px;margin-bottom:14px;flex-wrap:wrap}
 .toggle button{border:0;background:none;border-radius:999px;padding:8px 14px;min-height:44px;font-weight:700;cursor:pointer;color:var(--muted)}
 .toggle button[aria-pressed=true]{background:var(--accent);color:var(--bg)}
+/* ponto na aba que contém o fundo escolhido (a outra aba mostra as opções, mas nenhuma marcada) */
+.toggle button[data-tem-fundo]::after{content:"";display:inline-block;width:8px;height:8px;margin-left:8px;border-radius:50%;background:var(--accent);vertical-align:middle}
+.toggle button[aria-pressed=true][data-tem-fundo]::after{background:var(--bg)}
 .bgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px}
 .bg{border:2px solid transparent;border-radius:10px;background:var(--bg);padding:0;cursor:pointer;overflow:hidden;display:flex;flex-direction:column}
 .bg canvas{width:100%;aspect-ratio:9/16;display:block;max-width:100%}
-.bg span{font:700 14px/1.15 var(--sans);padding:8px 6px;text-align:center;letter-spacing:.02em;min-height:3.9em;display:flex;align-items:center;justify-content:center;overflow-wrap:anywhere}
+.bg span{font:700 13px/1.2 var(--sans);padding:8px 5px;text-align:center;letter-spacing:.01em;min-height:3.9em;display:flex;align-items:center;justify-content:center;overflow-wrap:break-word;text-wrap:balance}
 .bg[aria-pressed=true]{border-color:var(--accent)}
 .bg[aria-pressed=true] span{color:var(--accent)}
 .phrase{margin-top:14px;padding:12px 14px;border-left:3px solid var(--accent);background:var(--bg);border-radius:0 10px 10px 0;font:700 19px/1.25 var(--sans)}
@@ -143,18 +146,27 @@ footer.foot{margin-top:28px;padding-top:18px;border-top:1px solid var(--line);co
 .slot input:disabled{opacity:1;-webkit-text-fill-color:var(--ink);cursor:not-allowed}
 .btn:disabled{opacity:.6;cursor:progress}
 
-/* fundo único (aba Campanha): miniatura maior e centralizada */
 
 /* barra fixa de ações (só no celular, enquanto a prévia não está na tela) */
 .dock{display:none}
 .voltar{display:none}
-@media (max-width:719px){
+/* dock: celular em pé (<720 px) e celular deitado (altura < 500 px, quando a prévia não cabe na janela) */
+@media (max-width:719px), (max-height:500px) and (orientation:landscape){
   html{scroll-behavior:smooth}
   body{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))}
   .dock{position:fixed;left:0;right:0;bottom:0;z-index:20;display:grid;grid-template-columns:1fr 1.3fr;gap:8px;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:rgba(18,17,34,.94);border-top:1px solid var(--line2);backdrop-filter:blur(8px);transition:transform .18s ease}
   .dock[data-off]{transform:translateY(110%);visibility:hidden}
   .dock .btn{min-height:48px;text-align:center;text-decoration:none;color:var(--ink);display:flex;align-items:center;justify-content:center}
   .dock .btn.primary{color:var(--bg);grid-column:auto}
+}
+/* deitado, o quadro da prévia é mais alto que a janela: a ação principal fica sempre à mão */
+@media (max-height:500px) and (orientation:landscape){
+  .dock[data-off]{transform:none;visibility:visible}
+  .dock{padding-top:6px;padding-bottom:calc(6px + env(safe-area-inset-bottom,0px))}
+  .dock .btn{min-height:44px}
+  body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+}
+@media (max-width:719px){
   .voltar{display:inline-flex;align-items:center;min-height:44px;margin:0 0 10px;color:var(--accent);font-weight:700;text-decoration:none}
 }
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}.dock{transition:none}}

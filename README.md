@@ -84,6 +84,8 @@ O importador cruza pelo `SQ`, confere os totais entre as duas fontes e registra 
 
 - Três faixas: coluna única até 719 px (prévia ao final, barra fixa "Ver prévia / Compartilhar" enquanto ela não está na tela, link "Voltar aos campos"), duas colunas com prévia de 300 px de 720 a 919 px e prévia de 380 px a partir de 920 px.
 - A altura da prévia acompanha a janela (`--acoes` em `public/styles.css`), então os quatro botões cabem em notebooks de 720 px.
+- Contraste da imagem exportada: cada texto é medido pixel a pixel contra o que está atrás dele nos 15 fundos (teste e2e, mínimo 4,5:1). Linhas vazias usam o mesmo vidro das preenchidas; o selo de candidatura irregular é `#FF93A0`; "Esse é o meu time:" nunca é partido entre linhas.
+- Celular deitado (altura < 500 px): a barra fixa com Compartilhar fica sempre visível. A aba (Fundo/Causa) que contém o fundo escolhido ganha um ponto.
 - Impressão em 9 cm de largura (a referência usa 8 cm) e textos mínimos maiores na imagem, para o CNPJ e os rótulos ficarem legíveis no papel.
 - `--faint` com contraste ≥ 4,5:1; alvos de toque ≥ 44 px; o × nativo do `type=search` fica oculto.
 - Sem a pasta `logos/`, o app não pede logos (`CONFIG.LOGOS_DISPONIVEIS = false`) e usa a pílula "NN · SIGLA".

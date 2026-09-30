@@ -4,7 +4,16 @@ import { S, $ } from './state.js';
 import { drawBG } from './backgrounds.js';
 import { render } from './render.js';
 
-export function updatePhrase() { $('#phrase').textContent = phraseText(S.bg); }
+export function updatePhrase() { $('#phrase').textContent = phraseText(S.bg); marcarAbas(); }
+
+// Ponto na aba que contém o fundo escolhido, para não parecer que nada está selecionado ao trocar de aba.
+function marcarAbas() {
+  const dono = ALLBG[S.bg] && ALLBG[S.bg].kind;
+  for (const [id, kind, nome] of [['#tabFundo', 'fundo', 'Fundo'], ['#tabCause', 'cause', 'Causa']]) {
+    const b = $(id); b.toggleAttribute('data-tem-fundo', dono === kind);
+    if (dono === kind) b.setAttribute('aria-label', nome + ' (fundo escolhido)'); else b.removeAttribute('aria-label');
+  }
+}
 
 export function buildBgs() {
   const box = $('#bgs'); box.innerHTML = '';
@@ -30,7 +39,7 @@ export function setTab(t) {
   S.tab = t;
   $('#tabCause').setAttribute('aria-pressed', String(t === 'cause'));
   $('#tabFundo').setAttribute('aria-pressed', String(t === 'fundo'));
-  buildBgs();
+  buildBgs(); marcarAbas();
 }
 
 export function initTabs() {

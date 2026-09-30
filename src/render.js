@@ -66,12 +66,14 @@ export async function draw(token){
 
   // cabeçalho
   const phrase = phraseText(S.bg); const hx=M, hw=W-2*M; const pad=40;
+  const [head,tail]=phrase.split(/ (?=Esse é o meu time:$)/); // o fecho fica inteiro na última linha
+  const quebra=w=>tail?[...wrap(c,head,w),tail]:wrap(c,phrase,w);
   let fs=84; let lines; c.font=`700 ${fs}px Rajdhani,sans-serif`;
-  while(true){c.font=`700 ${fs}px Rajdhani,sans-serif`;lines=wrap(c,phrase,hw-2*pad);if(lines.length<=3||fs<=56)break;fs-=4;}
+  while(true){c.font=`700 ${fs}px Rajdhani,sans-serif`;lines=quebra(hw-2*pad);if(lines.length<=3||fs<=56)break;fs-=4;}
   { // equilibra as linhas (evita palavra sozinha na última linha)
     const n0=lines.length; let lo=(hw-2*pad)*.5, hi=hw-2*pad;
-    for(let k=0;k<14;k++){const mid=(lo+hi)/2; if(wrap(c,phrase,mid).length>n0) lo=mid; else hi=mid;}
-    lines=wrap(c,phrase,hi);
+    for(let k=0;k<14;k++){const mid=(lo+hi)/2; if(quebra(mid).length>n0) lo=mid; else hi=mid;}
+    lines=quebra(hi);
   }
   const lh=fs*1.0; const hh=pad+30+22+lines.length*lh+18+36+pad-6;
   glass(hx,M,hw,hh,22,.62);
@@ -87,7 +89,7 @@ export async function draw(token){
   const rh=Math.min(n===1?300:200,(avail-gap*(n-1))/n); const y0 = n===1? top+(avail-rh)/2 : top;
   rows.forEach((r,i)=>{
     const y=y0+i*(rh+gap), x=M, w=W-2*M, p=16;
-    glass(x,y,w,rh,18,r.empty?.45:.62);
+    glass(x,y,w,rh,18,.66);
     // foto
     const ph=rh-2*p, pw=Math.round(ph*.75), px=x+p, py=y+p;
     c.save();rr(c,px,py,pw,ph,12);c.clip();
@@ -105,14 +107,14 @@ export async function draw(token){
     // textos
     const tx=px+pw+24, tW=bx-24-tx;
     c.fillStyle=acc;const lfs=fitFont(c,`${i+1} · ${r.label.toUpperCase()}`,400,'CutePixel,monospace',(r.empty?(W-2*M):bx-24-tx)-8,30,22);c.fillText(`${i+1} · ${r.label.toUpperCase()}`,tx,y+p+26);
-    if(r.empty){c.fillStyle='rgba(247,247,247,.62)';c.font='600 42px Rajdhani,sans-serif';c.fillText('Ainda vou decidir',tx,y+rh/2+22);return;}
+    if(r.empty){c.fillStyle='rgba(247,247,247,.86)';c.font='600 42px Rajdhani,sans-serif';c.fillText('Ainda vou decidir',tx,y+rh/2+22);return;}
     const nfs=fitFont(c,r.name,700,'Rajdhani,sans-serif',tW,56,34);c.fillStyle='#F7F7F7';c.fillText(ellipsize(c,r.name,tW),tx,y+p+26+nfs*.95+4);
     // partido
     const by2=y+rh-p-8;
     if(logo){const lh2=46,lw2=Math.min(tW*.55,logo.width*(lh2/logo.height));c.fillStyle='rgba(247,247,247,.95)';rr(c,tx,by2-lh2-6,lw2+16,lh2+12,8);c.fill();c.drawImage(logo,tx+8,by2-lh2,lw2,lh2);}
     else{const txt=`${r.num.slice(0,2)} · ${r.sigla}`;c.font='700 28px Rajdhani,sans-serif';const lw2=Math.min(tW,c.measureText(txt).width+28);
       c.fillStyle=acc;rr(c,tx,by2-40,lw2,44,22);c.fill();c.fillStyle='#121122';c.fillText(ellipsize(c,txt,lw2-28),tx+14,by2-8);}
-    if(r.stt&&r.stt.cls==='bad'){c.fillStyle='#FF5A6E';c.font='700 22px Rajdhani,sans-serif';c.textAlign='right';c.fillText('⚠ '+(r.stt.short||'ATENÇÃO'),x+w-p-6,y+p+22);c.textAlign='left';}
+    if(r.stt&&r.stt.cls==='bad'){c.fillStyle='#FF93A0';c.font='700 26px Rajdhani,sans-serif';c.textAlign='right';c.fillText('⚠ '+(r.stt.short||'ATENÇÃO'),x+w-p-6,y+p+22);c.textAlign='left';}
   });
 
   // rodapé
