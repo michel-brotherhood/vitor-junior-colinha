@@ -4,9 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Meu Time na Urna</title>
-<meta name="description" content="Monte sua colinha para as Eleições 2026 e compartilhe com os amigos.">
+<meta name="description" content="Monte sua colinha para as Eleições 2026 com o Vitor Júnior 1200 para deputado federal e compartilhe com os amigos.">
 <meta property="og:title" content="Meu Time na Urna · Eleições 2026">
 <meta property="og:description" content="Monte sua colinha, escolha um fundo e compartilhe.">
+<link rel="canonical" href="https://colinha.deputadovitorjunior.com.br/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:url" content="https://colinha.deputadovitorjunior.com.br/">
+<meta property="og:image" content="https://colinha.deputadovitorjunior.com.br/public/img/social-share.webp">
+<meta property="og:image:width" content="1731">
+<meta property="og:image:height" content="909">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Meu Time na Urna · Eleições 2026">
+<meta name="twitter:image" content="https://colinha.deputadovitorjunior.com.br/public/img/social-share.webp">
+<link rel="icon" href="public/favicon.ico">
 <meta name="theme-color" content="#121122">
 <link rel="preload" href="public/fonts/rajdhani-700.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="public/styles.css">
@@ -19,7 +30,7 @@
   </header>
 
   <section class="hero">
-    <h1>Monte sua colinha e <em>entre no jogo</em> com o seu time.</h1>
+    <h1>Monte sua colinha e <em>leve o seu time</em> para a urna.</h1>
     <p>Digite o número ou o nome de cada candidatura ao Rio de Janeiro e à Presidência, e confira na hora com os dados oficiais do TSE. Depois é só escolher um fundo e compartilhar.</p>
   </section>
 
@@ -43,16 +54,17 @@
       <section class="step" aria-labelledby="h2s">
         <div class="step-h"><span class="step-n" aria-hidden="true">2</span><h2 id="h2s">Escolha o fundo</h2></div>
         <div class="toggle" role="group" aria-label="Tipo de fundo">
-          <button type="button" id="tabGame" aria-pressed="true">Estilo de jogo</button>
+          <button type="button" id="tabFundo" aria-pressed="true">Fundo</button>
           <button type="button" id="tabCause" aria-pressed="false">Causa</button>
         </div>
         <div class="bgs" id="bgs" role="group" aria-label="Fundos disponíveis"></div>
-        <div class="phrase" id="phrase" aria-live="polite">Sou fã de RPG e vou entrar no jogo com esse time:</div>
+        <div class="phrase" id="phrase" aria-live="polite">Pro Rio voltar a funcionar! Esse é o meu time:</div>
       </section>
     </main>
 
-    <aside class="preview" aria-label="Prévia da colinha">
+    <aside class="preview" id="previa" aria-label="Prévia da colinha">
       <div class="frame">
+        <a class="voltar" href="#h1s">↑ Voltar aos campos</a>
         <canvas id="out" width="1080" height="1920" role="img" aria-label="Prévia da sua colinha"></canvas>
         <div class="actions">
           <button class="btn primary" id="share" type="button">Compartilhar colinha</button>
@@ -69,8 +81,13 @@
   <footer class="foot">
     <span>Dados das candidaturas: TSE, DivulgaCandContas, atualizados periodicamente. Confira sempre a situação de cada candidatura.</span>
     <span id="sig"></span>
+    <img class="foot-logo" src="public/img/pdt-branco.png" alt="PDT" width="88" height="40">
   </footer>
 </div>
+<nav class="dock" id="dock" aria-label="Ações rápidas">
+  <a class="btn" href="#previa">Ver prévia</a>
+  <button class="btn primary" id="share2" type="button">Compartilhar colinha</button>
+</nav>
 <img id="printImg" alt="Colinha para impressão" width="1080" height="1920">
 <script type="module" src="src/main.js"></script>
 </body>

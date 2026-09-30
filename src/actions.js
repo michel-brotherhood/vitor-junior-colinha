@@ -61,6 +61,16 @@ async function print() {
 export function initActions() {
   $('#dl').addEventListener('click', download);
   $('#share').addEventListener('click', share);
+  $('#share2').addEventListener('click', share);
   $('#link').addEventListener('click', copyLink);
   $('#print').addEventListener('click', print);
+}
+
+// Barra fixa do celular: some só quando o botão Compartilhar do quadro da prévia já está inteiro na tela
+// (observar o quadro todo escondia a barra com os botões ainda abaixo da dobra).
+export function initDock() {
+  const dock = $('#dock'), alvo = $('#share');
+  if (!dock || !alvo || !('IntersectionObserver' in window)) return;
+  new IntersectionObserver(([e]) => { dock.toggleAttribute('data-off', e.isIntersecting && e.intersectionRatio >= 0.95); },
+    { threshold: [0, 0.5, 0.95, 1] }).observe(alvo);
 }

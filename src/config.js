@@ -11,9 +11,18 @@ export const CONFIG = {
   ANO: 2026,
   ELEICAO: 20322002026, // valor herdado da referência; não verificado contra o TSE
   // Números fixos por cargo: { codigoDoCargo: numero }
-  FIXOS: { 7: '65021' },
-  ASSINATURA_SITE: 'Iniciativa de Márcio Filho 65021 (PCdoB), candidato a deputado estadual pelo RJ · CNPJ 68.472.044/0001-58',
-  // Endereço impresso no fim da imagem. Ajuste para o domínio onde este app for publicado.
-  SITE: 'www.filhomarcio.com.br/colinha',
-  LOGOS: base + 'logos/'
+  FIXOS: { 6: '1200' },
+  CNPJ: '68.441.810/0001-17',
+  ASSINATURA_SITE: 'Iniciativa de Vitor Júnior 1200 (PDT), candidato a deputado federal pelo RJ · CNPJ 68.441.810/0001-17',
+  // Linha curta impressa no rodapé da imagem.
+  ASSINATURA_IMAGEM: 'Iniciativa de Vitor Júnior 1200 (PDT) · CNPJ 68.441.810/0001-17',
+  // Endereço impresso no fim da imagem. Vazio = usa o endereço em que o app está publicado.
+  SITE: 'colinha.deputadovitorjunior.com.br',
+  LOGO_RODAPE: base + 'public/img/pdt-branco.png', // logo branco do PDT, para fundos escuros
+  // Aba "Fundo": id -> imagem (9:16). O id 'vitor' é o padrão (laranja da campanha).
+  FUNDOS: { vitor: base + 'public/img/fundo-vitor.webp', azul: base + 'public/img/fundo-azul.webp', colorido: base + 'public/img/fundo-colorido.webp' },
+  LOGOS: base + 'logos/',
+  // Imagens prontas (ex.: geradas por IA) que substituem o fundo desenhado em código: public/img/compromissos/c01.webp … c12.webp. Ligar só quando os arquivos existirem (evita 12 x 404).
+  IMAGENS_COMPROMISSOS: false,
+  LOGOS_DISPONIVEIS: false // sem a pasta logos/, evita 404 por candidato e usa a pílula "NN · SIGLA"
 };

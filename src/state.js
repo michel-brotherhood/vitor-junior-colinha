@@ -1,2 +1,2 @@
-export const S = { ready: false, sel: {}, bg: 'rpg', tab: 'game' };
+export const S = { ready: false, sel: {}, bg: 'vitor', tab: 'fundo' };
 export const $ = s => document.querySelector(s);

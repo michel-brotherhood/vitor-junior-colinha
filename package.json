@@ -9,7 +9,7 @@
     "test": "vitest run",
     "e2e": "playwright test",
     "fontes": "node scripts/copiar-fontes.mjs",
-    "atualizar-dados": "node scripts/atualizar-dados.mjs"
+    "atualizar-dados": "node scripts/atualizar-dados.mjs --tse-zip --fotos"
   },
   "devDependencies": {
     "@fontsource/rajdhani": "^5.3.0",

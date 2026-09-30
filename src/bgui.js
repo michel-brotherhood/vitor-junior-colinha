@@ -1,14 +1,24 @@
 // Etapa 2: abas e grade de fundos.
-import { GAMES, CAUSES, ALLBG, phraseText } from './cargos.js';
+import { CAUSES, FUNDOS, ALLBG, phraseText } from './cargos.js';
 import { S, $ } from './state.js';
 import { drawBG } from './backgrounds.js';
 import { render } from './render.js';
 
-export function updatePhrase() { $('#phrase').textContent = phraseText(S.bg); }
+export function updatePhrase() { $('#phrase').textContent = phraseText(S.bg); marcarAbas(); }
+
+// Ponto na aba que contém o fundo escolhido, para não parecer que nada está selecionado ao trocar de aba.
+function marcarAbas() {
+  const dono = ALLBG[S.bg] && ALLBG[S.bg].kind;
+  for (const [id, kind, nome] of [['#tabFundo', 'fundo', 'Fundo'], ['#tabCause', 'cause', 'Causa']]) {
+    const b = $(id); b.toggleAttribute('data-tem-fundo', dono === kind);
+    if (dono === kind) b.setAttribute('aria-label', nome + ' (fundo escolhido)'); else b.removeAttribute('aria-label');
+  }
+}
 
 export function buildBgs() {
   const box = $('#bgs'); box.innerHTML = '';
-  (S.tab === 'game' ? GAMES : CAUSES).forEach(b => {
+  const lista = S.tab === 'cause' ? CAUSES : FUNDOS;
+  lista.forEach(b => {
     const btn = document.createElement('button');
     btn.type = 'button'; btn.className = 'bg'; btn.setAttribute('aria-pressed', String(S.bg === b.id));
     const cv = document.createElement('canvas'); cv.width = 180; cv.height = 320; cv.setAttribute('aria-hidden', 'true');
@@ -27,13 +37,13 @@ export function buildBgs() {
 
 export function setTab(t) {
   S.tab = t;
-  $('#tabGame').setAttribute('aria-pressed', String(t === 'game'));
   $('#tabCause').setAttribute('aria-pressed', String(t === 'cause'));
-  buildBgs();
+  $('#tabFundo').setAttribute('aria-pressed', String(t === 'fundo'));
+  buildBgs(); marcarAbas();
 }
 
 export function initTabs() {
-  $('#tabGame').addEventListener('click', () => setTab('game'));
   $('#tabCause').addEventListener('click', () => setTab('cause'));
+  $('#tabFundo').addEventListener('click', () => setTab('fundo'));
 }
 export { ALLBG };

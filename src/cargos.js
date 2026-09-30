@@ -1,3 +1,5 @@
+import { COMPROMISSOS } from './compromissos.js';
+
 // Códigos de cargo do TSE usados pela referência.
 export const CARGOS = {
   1: { nome: 'Presidente', dig: 2 },
@@ -17,33 +19,22 @@ export const SLOTS = [
   { key: 'pr', cargo: 1, ue: 'BR', label: 'Presidente' }
 ];
 
-export const GAMES = [
-  { id: 'rpg', label: 'RPG', frase: 'RPG' },
-  { id: 'rts', label: 'RTS', frase: 'RTS' },
-  { id: 'fps', label: 'FPS', frase: 'FPS' },
-  { id: 'luta', label: 'Luta', frase: 'luta' },
-  { id: 'corrida', label: 'Corrida', frase: 'corrida' },
-  { id: 'plataforma', label: 'Plataforma', frase: 'plataforma' },
-  { id: 'puzzle', label: 'Puzzle', frase: 'puzzle' },
-  { id: 'moba', label: 'MOBA', frase: 'MOBA' }
+// Aba "Fundo": três estampas, mesma frase da campanha.
+const FRASE = 'Pro Rio voltar a funcionar!';
+export const FUNDOS = [
+  { id: 'vitor', label: 'Laranja', frase: FRASE },
+  { id: 'azul', label: 'Azul', frase: FRASE },
+  { id: 'colorido', label: 'Colorido', frase: FRASE }
 ];
-export const CAUSES = [
-  { id: 'educacao', label: 'Educação', frase: 'a Educação' },
-  { id: 'ciencia', label: 'Ciência', frase: 'a Ciência' },
-  { id: 'saude', label: 'Saúde', frase: 'a Saúde' },
-  { id: 'seguranca', label: 'Segurança', frase: 'a Segurança' },
-  { id: 'cultura', label: 'Cultura', frase: 'a Cultura' },
-  { id: 'ambiente', label: 'Meio Ambiente', frase: 'o Meio Ambiente' },
-  { id: 'esporte', label: 'Esporte', frase: 'o Esporte' },
-  { id: 'tecnologia', label: 'Tecnologia', frase: 'a Tecnologia' }
-];
+// Aba "Causa": os 12 compromissos (textos em src/compromissos.js).
+export const CAUSES = COMPROMISSOS.map(c => ({ id: c.id, label: `${c.n}. ${c.titulo}`, n: c.n, titulo: c.titulo, texto: c.texto, frente: c.frente }));
 export const ALLBG = Object.fromEntries([
-  ...GAMES.map(g => [g.id, { ...g, kind: 'game' }]),
+  ...FUNDOS.map(c => [c.id, { ...c, kind: 'fundo' }]),
   ...CAUSES.map(c => [c.id, { ...c, kind: 'cause' }])
 ]);
 
 export function phraseText(bgId) {
   const b = ALLBG[bgId];
-  if (b.kind === 'game') return `Sou fã de ${b.frase} e vou entrar no jogo com esse time:`;
-  return `Para defender ${b.frase}, meu time é esse:`;
+  if (b.kind === 'fundo') return `${b.frase} Esse é o meu time:`;
+  return `Compromisso ${b.n}: ${b.titulo}. Esse é o meu time:`;
 }

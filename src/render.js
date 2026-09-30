@@ -1,10 +1,11 @@
 // Desenho da colinha (1080×1920). É a única fonte da prévia, do PNG baixado/compartilhado e da impressão.
 import { CONFIG } from './config.js';
-import { CARGOS, SLOTS, phraseText } from './cargos.js';
+import { CARGOS, SLOTS, CAUSES, phraseText } from './cargos.js';
 import { S, $ } from './state.js';
 import { status } from './search.js';
 import { photoURLs, logoURL } from './dataStore.js';
-import { drawBG, PAL, rr } from './backgrounds.js';
+import { drawBG, PAL, rr, carregarFundos, carregarImagensCompromissos } from './backgrounds.js';
+import { enderecoParaImagem } from './site.js';
 
 const imgCache = new Map();
 // Aceita uma URL só (logo) ou uma lista de URLs para tentar em ordem (foto local · foto ao vivo).
@@ -45,7 +46,7 @@ function updateCanvasLabel(){
   $('#out').setAttribute('aria-label','Prévia da sua colinha. '+partes.join('. ')+'.');
 }
 export async function draw(token){
-  if(!fontsReady) fontsReady = Promise.all(['700 80px Rajdhani','600 30px Rajdhani','400 30px CutePixel'].map(f=>document.fonts.load(f).catch(()=>{}))).then(()=>onFontsReady());
+  if(!fontsReady) fontsReady = Promise.all(['700 80px Rajdhani','600 30px Rajdhani','400 30px CutePixel'].map(f=>document.fonts.load(f).catch(()=>{})).concat(carregarFundos(CONFIG.FUNDOS), CONFIG.IMAGENS_COMPROMISSOS ? carregarImagensCompromissos('public/img/compromissos/', CAUSES.map(c => c.id)) : [])).then(()=>onFontsReady());
   await fontsReady;
   const sl = SLOTS;
   const rows = sl.map(s=>{
@@ -54,7 +55,7 @@ export async function draw(token){
     if(st.party) return {label:s.label,dig:2,num:st.party.num,name:'VOTO NA LEGENDA',sigla:st.party.sigla,logo:logoURL(st.party.sigla),legenda:true};
     return {label:s.label,dig:cg.dig,empty:true};
   });
-  const imgs = await Promise.all(rows.map(r=>Promise.all([loadImg(r.photo),loadImg(r.logo)])));
+  const [imgs, logoRodape] = await Promise.all([Promise.all(rows.map(r=>Promise.all([loadImg(r.photo),loadImg(r.logo)]))), loadImg(CONFIG.LOGO_RODAPE)]);
   if(token!==renderToken) return;
   const cv=$('#out'), c=cv.getContext('2d'); const W=1080,H=1920,M=52; const [acc,acc2]=PAL[S.bg];
   c.clearRect(0,0,W,H); drawBG(c,S.bg,W,H);
@@ -65,12 +66,14 @@ export async function draw(token){
 
   // cabeçalho
   const phrase = phraseText(S.bg); const hx=M, hw=W-2*M; const pad=40;
+  const [head,tail]=phrase.split(/ (?=Esse é o meu time:$)/); // o fecho fica inteiro na última linha
+  const quebra=w=>tail?[...wrap(c,head,w),tail]:wrap(c,phrase,w);
   let fs=84; let lines; c.font=`700 ${fs}px Rajdhani,sans-serif`;
-  while(true){c.font=`700 ${fs}px Rajdhani,sans-serif`;lines=wrap(c,phrase,hw-2*pad);if(lines.length<=3||fs<=56)break;fs-=4;}
+  while(true){c.font=`700 ${fs}px Rajdhani,sans-serif`;lines=quebra(hw-2*pad);if(lines.length<=3||fs<=56)break;fs-=4;}
   { // equilibra as linhas (evita palavra sozinha na última linha)
     const n0=lines.length; let lo=(hw-2*pad)*.5, hi=hw-2*pad;
-    for(let k=0;k<14;k++){const mid=(lo+hi)/2; if(wrap(c,phrase,mid).length>n0) lo=mid; else hi=mid;}
-    lines=wrap(c,phrase,hi);
+    for(let k=0;k<14;k++){const mid=(lo+hi)/2; if(quebra(mid).length>n0) lo=mid; else hi=mid;}
+    lines=quebra(hi);
   }
   const lh=fs*1.0; const hh=pad+30+22+lines.length*lh+18+36+pad-6;
   glass(hx,M,hw,hh,22,.62);
@@ -81,12 +84,12 @@ export async function draw(token){
   c.fillText(`Rio de Janeiro · 1º turno · 4 de outubro de 2026`,hx+pad,M+hh-pad+6);
 
   // linhas
-  const footH=118; const footY=H-M-footH;
+  const footH=162; const footY=H-M-footH;
   const top=M+hh+30, gap=22, n=rows.length; const avail=footY-26-top;
   const rh=Math.min(n===1?300:200,(avail-gap*(n-1))/n); const y0 = n===1? top+(avail-rh)/2 : top;
   rows.forEach((r,i)=>{
     const y=y0+i*(rh+gap), x=M, w=W-2*M, p=16;
-    glass(x,y,w,rh,18,r.empty?.45:.62);
+    glass(x,y,w,rh,18,.66);
     // foto
     const ph=rh-2*p, pw=Math.round(ph*.75), px=x+p, py=y+p;
     c.save();rr(c,px,py,pw,ph,12);c.clip();
@@ -103,21 +106,37 @@ export async function draw(token){
       if(!r.empty){c.fillStyle='#121122';c.font=`700 ${Math.round(bh*.78)}px Rajdhani,sans-serif`;c.textAlign='center';c.fillText(r.num[d]||'',kx+bw/2,by+bh*.78);c.textAlign='left';}}
     // textos
     const tx=px+pw+24, tW=bx-24-tx;
-    c.fillStyle=acc;c.font='400 24px CutePixel,monospace';c.fillText(`${i+1} · ${r.label.toUpperCase()}`,tx,y+p+26);
-    if(r.empty){c.fillStyle='rgba(247,247,247,.5)';c.font='600 38px Rajdhani,sans-serif';c.fillText('Ainda vou decidir',tx,y+rh/2+22);return;}
+    c.fillStyle=acc;const lfs=fitFont(c,`${i+1} · ${r.label.toUpperCase()}`,400,'CutePixel,monospace',(r.empty?(W-2*M):bx-24-tx)-8,30,22);c.fillText(`${i+1} · ${r.label.toUpperCase()}`,tx,y+p+26);
+    if(r.empty){c.fillStyle='rgba(247,247,247,.86)';c.font='600 42px Rajdhani,sans-serif';c.fillText('Ainda vou decidir',tx,y+rh/2+22);return;}
     const nfs=fitFont(c,r.name,700,'Rajdhani,sans-serif',tW,56,34);c.fillStyle='#F7F7F7';c.fillText(ellipsize(c,r.name,tW),tx,y+p+26+nfs*.95+4);
     // partido
     const by2=y+rh-p-8;
     if(logo){const lh2=46,lw2=Math.min(tW*.55,logo.width*(lh2/logo.height));c.fillStyle='rgba(247,247,247,.95)';rr(c,tx,by2-lh2-6,lw2+16,lh2+12,8);c.fill();c.drawImage(logo,tx+8,by2-lh2,lw2,lh2);}
     else{const txt=`${r.num.slice(0,2)} · ${r.sigla}`;c.font='700 28px Rajdhani,sans-serif';const lw2=Math.min(tW,c.measureText(txt).width+28);
       c.fillStyle=acc;rr(c,tx,by2-40,lw2,44,22);c.fill();c.fillStyle='#121122';c.fillText(ellipsize(c,txt,lw2-28),tx+14,by2-8);}
-    if(r.stt&&r.stt.cls==='bad'){c.fillStyle='#FF5A6E';c.font='700 22px Rajdhani,sans-serif';c.textAlign='right';c.fillText('⚠ '+(r.stt.short||'ATENÇÃO'),x+w-p-6,y+p+22);c.textAlign='left';}
+    if(r.stt&&r.stt.cls==='bad'){c.fillStyle='#FF93A0';c.font='700 26px Rajdhani,sans-serif';c.textAlign='right';c.fillText('⚠ '+(r.stt.short||'ATENÇÃO'),x+w-p-6,y+p+22);c.textAlign='left';}
   });
 
   // rodapé
   glass(M,footY,W-2*M,footH,18,.7);
-  c.fillStyle='#F7F7F7';c.font='700 30px Rajdhani,sans-serif';c.fillText('Celular não entra na cabine: leve impresso ou anotado.',M+30,footY+46);
-  const site = CONFIG.SITE || location.host;
-  c.fillStyle=acc2;c.font='400 30px CutePixel,monospace';c.fillText(`Monte a sua: ${site}`,M+30,footY+90);
+  const fx=M+30;
+  // logo do partido à direita; todo texto do rodapé fica à esquerda dele, com folga
+  let logoW=0;
+  if(logoRodape){const lh=54;logoW=lh*logoRodape.width/logoRodape.height;c.drawImage(logoRodape,W-M-30-logoW,footY+(footH-lh)/2,logoW,lh);}
+  const maxW=W-2*M-60-(logoW?logoW+24:0);
+  const site=enderecoParaImagem(CONFIG.SITE,location.host);
+  const linhas=site?[46,92,138]:[58,112];
+  c.textBaseline='alphabetic';
+  c.fillStyle='#F7F7F7';c.font='700 30px Rajdhani,sans-serif';
+  c.fillText(ellipsize(c,'Celular não entra na cabine: leve impresso ou anotado.',W-2*M-60),fx,footY+linhas[0]);
+  if(site){
+    const txt=`Monte a sua: ${site}`;
+    fitFont(c,txt,700,'Rajdhani,sans-serif',maxW,30,22);
+    c.fillStyle=acc2;c.fillText(ellipsize(c,txt,maxW),fx,footY+linhas[1]);
+  }
+  // identificação do responsável (obrigatória em material de campanha)
+  c.fillStyle='rgba(247,247,247,.86)';c.font='600 30px Rajdhani,sans-serif';
+  const fsAss=fitFont(c,CONFIG.ASSINATURA_IMAGEM,600,'Rajdhani,sans-serif',W-2*M-60,30,24);
+  c.fillStyle='rgba(247,247,247,.86)';c.fillText(ellipsize(c,CONFIG.ASSINATURA_IMAGEM,W-2*M-60),fx,footY+linhas[site?2:1]);
   onDrawn(token);
 }

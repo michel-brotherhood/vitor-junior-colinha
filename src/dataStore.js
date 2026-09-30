@@ -35,8 +35,10 @@ export async function getMeta() {
 
 // Fotos: cópia local primeiro; o atalho /tse só entra se CONFIG.USAR_PROXY_TSE estiver ligado.
 export const photoURLs = c => {
-  const urls = [`${CONFIG.FOTOS}${c.id}.jpg`];
+  const urls = [];
+  if (c.foto) urls.push(new URL(c.foto, location.href).href);
+  urls.push(`${CONFIG.FOTOS}${c.id}.jpg`);
   if (CONFIG.USAR_PROXY_TSE) urls.push(`${CONFIG.API}/arquivo/img/${CONFIG.ELEICAO}/${c.id}/${c.ue}`);
   return urls;
 };
-export const logoURL = sigla => sigla ? CONFIG.LOGOS + encodeURIComponent(sigla.replace(/\s+/g, '').toUpperCase()) + '.png' : null;
+export const logoURL = sigla => CONFIG.LOGOS_DISPONIVEIS && sigla ? CONFIG.LOGOS + encodeURIComponent(sigla.replace(/\s+/g, '').toUpperCase()) + '.png' : null;

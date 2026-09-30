@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { norm, rank, status, buildList, suggest, resolveRaw, parseParams, buildQuery, sanitizeVoto } from '../src/search.js';
-import { SLOTS, phraseText } from '../src/cargos.js';
+import { SLOTS, CAUSES, phraseText } from '../src/cargos.js';
+import { COMPROMISSOS } from '../src/compromissos.js';
 
 const fx = JSON.parse(readFileSync(new URL('./fixtures/candidatos-teste.json', import.meta.url), 'utf8'));
 const df = buildList(fx['RJ/6'], 'RJ');
@@ -29,6 +30,19 @@ describe('situação', () => {
     expect(status('Renúncia').short).toBe('RENUNCIOU');
     expect(status('Cassado').cls).toBe('bad');
     expect(status('')).toBeNull();
+  });
+});
+
+describe('situação: textos reais do TSE/colinha.ai', () => {
+  const casos = [
+    ['DEFERIDO', 'ok', 0], ['DEFERIDO EM PRAZO RECURSAL OU COM RECURSO', 'warn', 1], ['PENDENTE DE JULGAMENTO', 'warn', 2],
+    ['INDEFERIDO EM PRAZO RECURSAL OU COM RECURSO', 'bad', 3], ['INDEFERIDO COM RECURSO', 'bad', 3], ['INDEFERIDO', 'bad', 4],
+    ['CANCELADO', 'bad', 5], ['FALECIMENTO', 'bad', 5], ['RENÚNCIA', 'bad', 5], ['renuncia', 'bad', 5], ['inapto', 'bad', 5], ['PEDIDO NÃO CONHECIDO', 'warn', 5]
+  ];
+  for (const [txt, cls, r] of casos) it(`${txt} → ${cls}, rank ${r}`, () => { expect(status(txt).cls).toBe(cls); expect(rank(txt)).toBe(r); });
+  it('INDEFERIDO com recurso nunca aparece como deferida', () => {
+    expect(status('INDEFERIDO COM RECURSO').txt).not.toMatch(/^Deferida/);
+    expect(status('INDEFERIDO EM PRAZO RECURSAL OU COM RECURSO').short).toBe('INDEFERIDA');
   });
 });
 
@@ -98,7 +112,8 @@ describe('resolveRaw', () => {
 
 describe('link', () => {
   it('parseParams valida fundo e votos', () => {
-    expect(parseParams('?f=moba&v=1234-65021-123-456-13-22')).toEqual({ bg: 'moba', votos: ['1234', '65021', '123', '456', '13', '22'] });
+    expect(parseParams('?f=c08&v=1200-99020-123-456-13-22')).toEqual({ bg: 'c08', votos: ['1200', '99020', '123', '456', '13', '22'] });
+    expect(parseParams('?f=vitor').bg).toBe('vitor');
     expect(parseParams('?f=__proto__').bg).toBeNull();
     expect(parseParams('?f=constructor').bg).toBeNull();
     expect(parseParams('?f=<script>').bg).toBeNull();
@@ -115,17 +130,49 @@ describe('link', () => {
     expect(sanitizeVoto('12345', SLOTS[1])).toBe('12345');
   });
   it('buildQuery não vaza texto digitado e é reversível', () => {
-    const q = buildQuery(['1234', 'axel', '', '', '13', '22'], 'saude');
+    const q = buildQuery(['1234', 'axel', '', '', '13', '22'], 'c03');
     expect(q.get('v')).toBe('1234----13-22');
     expect(parseParams('?' + q).votos).toEqual(['1234', '', '', '', '13', '22']);
-    expect(parseParams('?' + q).bg).toBe('saude');
+    expect(parseParams('?' + q).bg).toBe('c03');
   });
 });
 
 describe('frase do fundo', () => {
-  it('jogo e causa', () => {
-    expect(phraseText('rpg')).toBe('Sou fã de RPG e vou entrar no jogo com esse time:');
-    expect(phraseText('luta')).toBe('Sou fã de luta e vou entrar no jogo com esse time:');
-    expect(phraseText('ambiente')).toBe('Para defender o Meio Ambiente, meu time é esse:');
+  it('fundos e compromissos', () => {
+    for (const id of ['vitor', 'azul', 'colorido']) expect(phraseText(id)).toBe('Pro Rio voltar a funcionar! Esse é o meu time:');
+    expect(phraseText('c01')).toBe('Compromisso 1: Integração no transporte. Esse é o meu time:');
+    expect(phraseText('c12')).toBe('Compromisso 12: Segurança Integrada. Esse é o meu time:');
+  });
+  it('12 compromissos, ids únicos, e o módulo espelha data/compromissos.json', () => {
+    const json = JSON.parse(readFileSync(new URL('../data/compromissos.json', import.meta.url), 'utf8')).compromissos;
+    expect(COMPROMISSOS).toHaveLength(12);
+    expect(new Set(COMPROMISSOS.map(c => c.id)).size).toBe(12);
+    expect(COMPROMISSOS).toEqual(json.map(c => ({ n: c.n, id: c.id, slug: c.slug, frente: c.frente, titulo: c.titulo, texto: c.texto })));
+    expect(CAUSES).toHaveLength(12);
+  });
+  it('?f= aceita só os fundos existentes; ids antigos (jogos/causas) são ignorados', () => {
+    expect(parseParams('?f=c07').bg).toBe('c07');
+    for (const f of ['vitor', 'azul', 'colorido']) expect(parseParams('?f=' + f).bg).toBe(f);
+    for (const antigo of ['rpg', 'luta', 'saude', 'ambiente', 'c13', '<x>']) expect(parseParams('?f=' + antigo).bg).toBeNull(); // main.js usa 'vitor' quando null
+  });
+});
+
+import { enderecoParaImagem } from '../src/site.js';
+describe('endereço impresso na imagem', () => {
+  it('CONFIG.SITE tem prioridade', () => { expect(enderecoParaImagem('vitorjunior.com.br/colinha', 'qualquer.host')).toBe('vitorjunior.com.br/colinha'); });
+  it('domínio normal é usado, sem www', () => { expect(enderecoParaImagem('', 'www.exemplo.com.br')).toBe('exemplo.com.br'); });
+  it('host de prévia (UUID), localhost e IP não são divulgados', () => {
+    expect(enderecoParaImagem('', 'd3394f2c-f815-4719-af8c-6655e952aaee.claudeusercontent.com')).toBeNull();
+    expect(enderecoParaImagem('', 'localhost:5173')).toBeNull();
+    expect(enderecoParaImagem('', '192.168.0.10')).toBeNull();
+    expect(enderecoParaImagem('', '')).toBeNull();
+    expect(enderecoParaImagem('', 'a'.repeat(40) + '.com')).toBeNull();
+  });
+});
+
+describe('estados vindos do campo `fora` do colinha.ai', () => {
+  it('inapto e renuncia aparecem como "fora da urna" na imagem', () => {
+    expect(status('inapto')).toMatchObject({ cls: 'bad', txt: 'Candidatura inapta', short: 'INAPTA' });
+    expect(status('renuncia')).toMatchObject({ cls: 'bad', short: 'RENUNCIOU' });
   });
 });

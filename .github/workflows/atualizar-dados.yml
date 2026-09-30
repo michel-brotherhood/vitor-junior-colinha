@@ -1,0 +1,79 @@
+name: Atualizar dados
+
+# Baixa a base oficial de candidaturas do TSE (consulta_cand_2026.zip) a partir de um runner do GitHub,
+# junta a situação (deferido, indeferido…) do colinha.ai e grava data/candidatos.json + data/fotos/ (fotos direto do DivulgaCandContas/TSE).
+# Manual (Run workflow) ou diário. Só faz commit se a validação passar e houver mudança.
+on:
+  workflow_dispatch:
+    inputs:
+      gravar:
+        description: 'Gravar e fazer commit (falso = só diagnóstico e dry-run)'
+        type: boolean
+        default: false
+      refazer_fotos:
+        description: 'Baixar todas as fotos de novo direto do TSE (substitui as existentes se o JPEG for válido)'
+        type: boolean
+        default: false
+      fonte:
+        description: 'Fonte da importação'
+        type: choice
+        default: tse-zip
+        options: [tse-zip, colinha-ai]
+  schedule:
+    - cron: '17 8 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: atualizar-dados
+  cancel-in-progress: false
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      FONTE: ${{ inputs.fonte || 'tse-zip' }}
+      REFAZER: ${{ inputs.refazer_fotos && '--refazer-fotos' || '' }}
+      GRAVAR: ${{ (github.event_name == 'schedule' || inputs.gravar) && 'sim' || 'nao' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Diagnóstico das fontes (somente leitura)
+        run: node scripts/diagnostico-fontes.mjs
+        continue-on-error: true
+
+      - name: Ler a página dos 12 compromissos (somente leitura)
+        run: node scripts/inspecionar-compromissos.mjs
+        continue-on-error: true
+
+      - name: Diagnóstico das fotos no TSE (somente leitura)
+        run: node scripts/diagnostico-fotos.mjs
+        continue-on-error: true
+
+      - name: Testes
+        run: |
+          npm ci
+          npx vitest run
+
+      - name: Importação (dry-run)
+        id: dry
+        run: node scripts/atualizar-dados.mjs --${FONTE} --dry-run
+
+      - name: Importação (gravar)
+        if: ${{ env.GRAVAR == 'sim' }}
+        run: node scripts/atualizar-dados.mjs --${FONTE} --fotos ${REFAZER}
+
+      - name: Commit da base
+        if: ${{ env.GRAVAR == 'sim' }}
+        run: |
+          git add data/
+          if git diff --cached --quiet; then echo "Sem mudanças."; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Atualiza a base de candidaturas ($(date -u +%Y-%m-%d)) [fonte: ${FONTE}]"
+          git push
