@@ -91,23 +91,31 @@ async function baixarFotos(dados) {
   const refazer = tem('refazer-fotos');
   const todos = CHAVES.flatMap(k => dados[k].candidatos.map(c => ({ c, k })));
   const fila = todos.filter(({ c }) => !c.foto && (refazer || !existsSync(new URL(`../data/fotos/${c.id}.jpg`, import.meta.url))));
-  let ok = 0, falha = 0, i = 0; const semFoto = [];
+  let ok = 0, falha = 0, i = 0, abortar = false; const semFoto = [], motivos = {};
+  const cab = { 'User-Agent': 'Mozilla/5.0 (colinha-importador)', Accept: 'image/jpeg,image/*;q=0.9,*/*;q=0.5' };
   const trabalhador = async () => {
-    while (i < fila.length) {
+    while (i < fila.length && !abortar) {
       const { c, k } = fila[i++];
       try {
         const b = await comRetry(async () => {
-          const r = await get(urlFotoTse(c.id, k), { signal: AbortSignal.timeout(30000) });
+          const r = await get(urlFotoTse(c.id, k), { headers: cab, signal: AbortSignal.timeout(30000) });
           const buf = Buffer.from(await r.arrayBuffer());
-          if (!ehJpeg(buf)) throw new Error('resposta não é JPEG');
+          if (!ehJpeg(buf)) throw new Error(`resposta não é JPEG (${buf.length} bytes, ${r.headers.get('content-type')})`);
           return buf;
         }, 2);
         await writeFile(new URL(`../data/fotos/${c.id}.jpg`, import.meta.url), b); ok++;
-      } catch { falha++; semFoto.push(c.id); }
+      } catch (e) {
+        falha++; semFoto.push(c.id);
+        const m = String(e.cause?.code || e.message).replace(/\d{6,}/g, 'N').slice(0, 120); motivos[m] = (motivos[m] || 0) + 1;
+        // Se as primeiras tentativas falham todas, o endpoint está recusando este cliente: não gasta 10 minutos à toa.
+        if (ok === 0 && falha >= 25) abortar = true;
+      }
     }
   };
-  await Promise.all(Array.from({ length: 6 }, trabalhador));
+  await Promise.all(Array.from({ length: 4 }, trabalhador));
   console.log(`Fotos (TSE): ${ok} baixadas, ${falha} indisponíveis (mantém a foto local se existir; senão o app usa silhueta), ${todos.length - fila.length} já existentes/locais.`);
+  if (falha) console.log('Motivos das falhas:', JSON.stringify(motivos));
+  if (abortar) console.log('ABORTADO: nenhuma foto baixada nas primeiras tentativas.');
   if (semFoto.length) console.log('Sem foto no TSE:', semFoto.slice(0, 30).join(', '), semFoto.length > 30 ? '…' : '');
 }
 
