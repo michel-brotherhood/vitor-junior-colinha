@@ -6,6 +6,7 @@
   "description": "Colinha eleitoral: monte seu time, escolha um fundo e compartilhe.",
   "scripts": {
     "dev": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs",
     "test": "vitest run",
     "e2e": "playwright test",
     "fontes": "node scripts/copiar-fontes.mjs",

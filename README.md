@@ -18,6 +18,21 @@ npm run e2e          # testes de navegador (Playwright + Chromium)
 Se o Playwright não achar o Chromium: `CHROMIUM_PATH=/caminho/chrome npm run e2e`.
 Para publicar, copie `index.html`, `public/`, `src/` e `data/` para qualquer hospedagem estática (caminhos relativos à pasta da página). `CONFIG.SITE` (em `src/config.js`) define o endereço impresso na imagem: hoje `colinha.deputadovitorjunior.com.br` (o app precisa ser servido na raiz desse subdomínio, porque `canonical`, `og:url` e `og:image` em `index.html` usam URLs absolutas dele). Se o endereço mudar, troque esses dois lugares.
 
+### Publicar no Cloudflare Pages (`colinha.deputadovitorjunior.com.br`)
+| Campo | Valor |
+|---|---|
+| Framework preset | None |
+| Build command | `npm run build` |
+| Build output directory | `dist` |
+| Production branch | `main` |
+| Variável (opcional) | `SKIP_DEPENDENCY_INSTALL=1` (o build só usa módulos nativos do Node; evita instalar Playwright/Vitest) |
+
+- `npm run build` gera `dist/` só com `index.html`, `public/`, `src/`, `data/candidatos.json`, `data/fotos/` e `_headers` (2.048 arquivos, ~12 MB). Ficam de fora testes, scripts, `assets/originais/` e `docs/`.
+- `cloudflare/_headers` define os cabeçalhos: CSP restrita (só `'self'`, `data:` e `blob:` para imagens), `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, e cache (fontes 1 ano; imagens 7 dias; fotos 30 dias; código e `candidatos.json` 5 min com revalidação). O Pages já comprime com gzip/brotli.
+- Domínio: em *Custom domains* adicione `colinha.deputadovitorjunior.com.br`; se o DNS não estiver no Cloudflare, crie um CNAME para `<projeto>.pages.dev`.
+- Atualização diária das candidaturas: o workflow commita em `data/` na branch padrão, o que dispara um novo deploy. Por isso a **branch padrão do repositório deve ser `main`** (o `cron` só roda na branch padrão).
+- Para conferir o que vai ao ar: `npm run build && ROOT=dist npm run dev` serve `dist/` com os mesmos cabeçalhos (a suíte e2e foi rodada assim: 60/60).
+
 ## Estrutura
 
 | Caminho | Papel |
