@@ -674,3 +674,50 @@ test.describe('auditoria 2: imagem exportada, paisagem e abas', () => {
     await expect(page.locator('#bgs .bg[aria-pressed=true]')).toHaveCount(0); // grade do Fundo sem marcação, mas a aba Causa indica onde está
   });
 });
+
+test.describe('auditoria 3: texto, prévia maior, fontes e barra fixa', () => {
+  test('título sem o resto do tema de jogos', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('h1')).toHaveText('Monte sua colinha e leve o seu time para a urna.');
+    await expect(page.locator('body')).not.toContainText(/entre no jogo/i);
+  });
+
+  test('nenhum texto visível abaixo de 14 px (abas Fundo e Causa)', async ({ page }) => {
+    await page.goto('/?v=1200-45200'); await page.waitForTimeout(600);
+    const menores = () => page.evaluate(() => [...document.querySelectorAll('body *')].filter(e => [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()) && e.getBoundingClientRect().width && !e.closest('canvas') && parseFloat(getComputedStyle(e).fontSize) < 14).map(e => e.tagName + ' ' + getComputedStyle(e).fontSize + ' ' + e.textContent.trim().slice(0, 20)));
+    expect(await menores()).toEqual([]);
+    await page.locator('#tabCause').click();
+    expect(await menores()).toEqual([]);
+  });
+
+  for (const [w, h, minCanvas] of [[320, 568, 250], [360, 740, 290], [390, 844, 325]]) {
+    test(`celular em pé ${w}×${h}: prévia usa a largura do quadro (≥ ${minCanvas}px) e "Baixar imagem" cabe em 1 linha`, async ({ page }) => {
+      await page.setViewportSize({ width: w, height: h });
+      await page.goto('/?v=1200-45200');
+      const c = await page.locator('#out').boundingBox();
+      expect(c.width).toBeGreaterThanOrEqual(minCanvas);
+      expect(Math.abs(c.height / c.width - 16 / 9)).toBeLessThan(0.02);
+      expect((await page.locator('#dl').boundingBox()).height).toBeLessThan(56);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+    });
+  }
+
+  test('notebook 1280×720: prévia maior (≥ 250 px) e os 4 botões continuam na janela', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.goto('/?v=1200-45200'); await page.waitForTimeout(500);
+    expect((await page.locator('#out').boundingBox()).width).toBeGreaterThanOrEqual(250);
+    await page.evaluate(() => scrollTo({ top: 600, behavior: 'instant' })); await page.waitForTimeout(150);
+    for (const id of ['#share', '#dl', '#print', '#link']) { const b = await page.locator(id).boundingBox(); expect(b.y).toBeGreaterThanOrEqual(0); expect(b.y + b.height).toBeLessThanOrEqual(720); }
+  });
+
+  test('barra fixa só some quando o botão Compartilhar do quadro está inteiro na tela', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/?v=1200-45200-555-131-55-22'); await page.waitForTimeout(600);
+    const max = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+    for (let y = 0; y <= max; y += 60) {
+      await page.evaluate(v => scrollTo({ top: v, behavior: 'instant' }), y); await page.waitForTimeout(60);
+      const s = await page.evaluate(() => { const r = document.querySelector('#share').getBoundingClientRect(); return { dentro: r.top >= 0 && r.bottom <= innerHeight, off: document.querySelector('#dock').hasAttribute('data-off') }; });
+      if (s.off) expect(s.dentro, `barra oculta com o botão fora da tela em y=${y}`).toBe(true);
+    }
+  });
+});
