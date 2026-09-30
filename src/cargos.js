@@ -19,18 +19,22 @@ export const SLOTS = [
   { key: 'pr', cargo: 1, ue: 'BR', label: 'Presidente' }
 ];
 
-export const CAMPAIGN = [
-  { id: 'vitor', label: 'Pro Rio', frase: 'Pro Rio voltar a funcionar!' }
+// Aba "Fundo": três estampas, mesma frase da campanha.
+const FRASE = 'Pro Rio voltar a funcionar!';
+export const FUNDOS = [
+  { id: 'vitor', label: 'Laranja', frase: FRASE },
+  { id: 'azul', label: 'Azul', frase: FRASE },
+  { id: 'colorido', label: 'Colorido', frase: FRASE }
 ];
 // Aba "Causa": os 12 compromissos (textos em src/compromissos.js).
 export const CAUSES = COMPROMISSOS.map(c => ({ id: c.id, label: `${c.n}. ${c.titulo}`, n: c.n, titulo: c.titulo, texto: c.texto, frente: c.frente }));
 export const ALLBG = Object.fromEntries([
-  ...CAMPAIGN.map(c => [c.id, { ...c, kind: 'campaign' }]),
+  ...FUNDOS.map(c => [c.id, { ...c, kind: 'fundo' }]),
   ...CAUSES.map(c => [c.id, { ...c, kind: 'cause' }])
 ]);
 
 export function phraseText(bgId) {
   const b = ALLBG[bgId];
-  if (b.kind === 'campaign') return `${b.frase} Esse é o meu time:`;
+  if (b.kind === 'fundo') return `${b.frase} Esse é o meu time:`;
   return `Compromisso ${b.n}: ${b.titulo}. Esse é o meu time:`;
 }

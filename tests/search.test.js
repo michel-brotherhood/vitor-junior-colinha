@@ -138,8 +138,8 @@ describe('link', () => {
 });
 
 describe('frase do fundo', () => {
-  it('campanha e compromissos', () => {
-    expect(phraseText('vitor')).toBe('Pro Rio voltar a funcionar! Esse é o meu time:');
+  it('fundos e compromissos', () => {
+    for (const id of ['vitor', 'azul', 'colorido']) expect(phraseText(id)).toBe('Pro Rio voltar a funcionar! Esse é o meu time:');
     expect(phraseText('c01')).toBe('Compromisso 1: Integração no transporte. Esse é o meu time:');
     expect(phraseText('c12')).toBe('Compromisso 12: Segurança Integrada. Esse é o meu time:');
   });
@@ -152,7 +152,7 @@ describe('frase do fundo', () => {
   });
   it('?f= aceita só os fundos existentes; ids antigos (jogos/causas) são ignorados', () => {
     expect(parseParams('?f=c07').bg).toBe('c07');
-    expect(parseParams('?f=vitor').bg).toBe('vitor');
+    for (const f of ['vitor', 'azul', 'colorido']) expect(parseParams('?f=' + f).bg).toBe(f);
     for (const antigo of ['rpg', 'luta', 'saude', 'ambiente', 'c13', '<x>']) expect(parseParams('?f=' + antigo).bg).toBeNull(); // main.js usa 'vitor' quando null
   });
 });

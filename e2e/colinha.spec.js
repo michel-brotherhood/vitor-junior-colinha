@@ -31,8 +31,8 @@ test.describe('base real (data/candidatos.json, importada do TSE)', () => {
     await expect(page.locator('footer .foot-logo')).toBeVisible();
     expect(await page.locator('footer .foot-logo').evaluate(i => i.complete && i.naturalWidth > 0)).toBe(true);
     await expect(page.locator('#phrase')).toHaveText('Pro Rio voltar a funcionar! Esse é o meu time:');
-    await expect(page.getByRole('button', { name: 'Pro Rio', exact: true })).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('#tabCampaign')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: 'Laranja', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#tabFundo')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('#out')).toHaveAttribute('aria-label', /Deputado Federal: VITOR JUNIOR, número 1200.*Deputado Estadual: ainda vou decidir/s);
     for (const k of ['de', 's1', 's2', 'go', 'pr']) await expect(inp(page, k)).toHaveValue('');
   });
@@ -293,14 +293,21 @@ test.describe('fundos', () => {
     'Incentivos para quem produz', 'Rio de portas abertas para investimento', 'Pacto Fiscal', 'Segurança Integrada'
   ];
 
-  test('13 fundos (Campanha + 12 compromissos): seleção, frase e prévia mudam; sem "Estilo de jogo"', async ({ page }) => {
+  test('15 fundos (3 em "Fundo" + 12 compromissos): seleção, frase e prévia mudam; sem "Estilo de jogo"', async ({ page }) => {
     await expect(page.getByText('Estilo de jogo')).toHaveCount(0);
-    await expect(page.locator('.toggle button')).toHaveText(['Campanha', 'Causa']);
-    await expect(page.getByRole('button', { name: 'Pro Rio', exact: true })).toHaveAttribute('aria-pressed', 'true');
-    await expect(page.locator('#bgs .bg')).toHaveCount(1);
+    await expect(page.getByText('Campanha', { exact: true })).toHaveCount(0);
+    await expect(page.locator('.toggle button')).toHaveText(['Fundo', 'Causa']);
+    await expect(page.getByRole('button', { name: 'Laranja', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#bgs .bg')).toHaveCount(3);
     const seen = new Set();
     const shot = async () => { await page.waitForTimeout(200); return page.evaluate(() => { const u = document.querySelector('#out').toDataURL(); return u.length + ':' + u.slice(-200); }); };
     seen.add(await shot());
+    for (const nome of ['Azul', 'Colorido', 'Laranja']) {
+      await page.getByRole('button', { name: nome, exact: true }).click();
+      await expect(page.getByRole('button', { name: nome, exact: true })).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.locator('#phrase')).toHaveText('Pro Rio voltar a funcionar! Esse é o meu time:');
+      seen.add(await shot());
+    }
     await page.locator('#tabCause').click();
     await expect(page.locator('#bgs .bg')).toHaveCount(12);
     for (const [i, titulo] of compromissos.entries()) {
@@ -311,9 +318,9 @@ test.describe('fundos', () => {
       await expect(page.locator('#phrase')).toHaveText(`Compromisso ${i + 1}: ${titulo}. Esse é o meu time:`);
       seen.add(await shot());
     }
-    expect(seen.size).toBe(13); // cada fundo gera uma imagem distinta
-    await page.locator('#tabCampaign').click();
-    await expect(page.locator('#bgs .bg')).toHaveCount(1);
+    expect(seen.size).toBe(15); // cada fundo gera uma imagem distinta
+    await page.locator('#tabFundo').click();
+    await expect(page.locator('#bgs .bg')).toHaveCount(3);
   });
 
   test('miniaturas dos compromissos não estouram a largura (390 px)', async ({ page }) => {
@@ -325,21 +332,25 @@ test.describe('fundos', () => {
     expect(cortados).toBe(0);
   });
 
-  test('fundo da campanha carrega a imagem laranja e o link ?f=vitor abre nele', async ({ page }) => {
+  test('fundo laranja carrega a imagem e o link ?f=vitor abre nele', async ({ page }) => {
     await page.waitForTimeout(500);
     // pixel da margem esquerda do canvas (fora dos painéis) deve ser laranja (imagem carregada, não o azul-escuro do site)
     const px = await page.evaluate(() => { const c = document.querySelector('#out'); return [...c.getContext('2d').getImageData(20, 1000, 1, 1).data]; });
     expect(px[0]).toBeGreaterThan(200); expect(px[1]).toBeGreaterThan(60); expect(px[1]).toBeLessThan(150); expect(px[2]).toBeLessThan(40);
     await page.goto('/?f=vitor');
     await ready(page);
-    await expect(page.locator('#tabCampaign')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#tabFundo')).toHaveAttribute('aria-pressed', 'true');
+    await page.goto('/?f=azul');
+    await ready(page);
+    await expect(page.locator('#tabFundo')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: 'Azul', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await page.goto('/?f=c11');
     await ready(page);
     await expect(page.locator('#tabCause')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('#phrase')).toHaveText('Compromisso 11: Pacto Fiscal. Esse é o meu time:');
     await page.goto('/?f=rpg'); // link antigo (estilo de jogo removido) volta ao padrão
     await ready(page);
-    await expect(page.locator('#tabCampaign')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#tabFundo')).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('#phrase')).toHaveText('Pro Rio voltar a funcionar! Esse é o meu time:');
   });
 });
@@ -558,14 +569,19 @@ test.describe('auditoria: responsividade e usabilidade', () => {
     await ctx.close();
   });
 
-  test('aba Campanha: miniatura única centralizada e sem pedido de logos', async ({ page }) => {
+  test('aba Fundo: 3 miniaturas (laranja, azul, colorido), imagens carregadas e sem pedido de logos', async ({ page }) => {
     const falhas = [];
-    page.on('response', r => { if (r.url().includes('/logos/')) falhas.push(r.url()); });
+    page.on('response', r => { if (r.url().includes('/logos/') || (r.url().includes('/img/fundo-') && !r.ok())) falhas.push(r.url()); });
     await withFixture(page); await page.goto('/'); await ready(page);
-    await inp(page, 'de').fill('99020');
-    await expect(page.locator('#bgs')).toHaveClass(/single/);
-    const g = await page.locator('#bgs .bg').boundingBox();
-    expect(g.width).toBeGreaterThanOrEqual(120);
+    await page.waitForTimeout(600);
+    await expect(page.locator('#bgs .bg')).toHaveText(['Laranja', 'Azul', 'Colorido']);
+    // pixel da margem esquerda (fora dos painéis) de cada fundo: laranja = R alto; azul = B > R; colorido = mistura, nunca o cinza do site
+    const px = async nome => { await page.getByRole('button', { name: nome, exact: true }).click(); await page.waitForTimeout(300);
+      return page.evaluate(() => [...document.querySelector('#out').getContext('2d').getImageData(6, 1300, 1, 1).data]); };
+    const lar = await px('Laranja'), azu = await px('Azul'), col = await px('Colorido');
+    expect(lar[0]).toBeGreaterThan(200); expect(lar[2]).toBeLessThan(60);
+    expect(azu[2]).toBeGreaterThan(azu[0] + 40);
+    expect(col[3]).toBe(255);
     expect(falhas).toEqual([]);
   });
 

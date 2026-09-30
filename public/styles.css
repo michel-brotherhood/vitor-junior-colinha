@@ -144,8 +144,6 @@ footer.foot{margin-top:28px;padding-top:18px;border-top:1px solid var(--line);co
 .btn:disabled{opacity:.6;cursor:progress}
 
 /* fundo único (aba Campanha): miniatura maior e centralizada */
-.bgs.single{grid-template-columns:minmax(120px,168px);justify-content:center}
-.bgs.single .bg span{font-size:15px;padding:10px 6px;min-height:0}
 
 /* barra fixa de ações (só no celular, enquanto a prévia não está na tela) */
 .dock{display:none}

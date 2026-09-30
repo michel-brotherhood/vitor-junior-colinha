@@ -4,7 +4,7 @@ import { CARGOS, SLOTS, CAUSES, phraseText } from './cargos.js';
 import { S, $ } from './state.js';
 import { status } from './search.js';
 import { photoURLs, logoURL } from './dataStore.js';
-import { drawBG, PAL, rr, carregarFundoVitor, carregarImagensCompromissos } from './backgrounds.js';
+import { drawBG, PAL, rr, carregarFundos, carregarImagensCompromissos } from './backgrounds.js';
 import { enderecoParaImagem } from './site.js';
 
 const imgCache = new Map();
@@ -46,7 +46,7 @@ function updateCanvasLabel(){
   $('#out').setAttribute('aria-label','Prévia da sua colinha. '+partes.join('. ')+'.');
 }
 export async function draw(token){
-  if(!fontsReady) fontsReady = Promise.all(['700 80px Rajdhani','600 30px Rajdhani','400 30px CutePixel'].map(f=>document.fonts.load(f).catch(()=>{})).concat(carregarFundoVitor(CONFIG.FUNDO_VITOR), CONFIG.IMAGENS_COMPROMISSOS ? carregarImagensCompromissos('public/img/compromissos/', CAUSES.map(c => c.id)) : [])).then(()=>onFontsReady());
+  if(!fontsReady) fontsReady = Promise.all(['700 80px Rajdhani','600 30px Rajdhani','400 30px CutePixel'].map(f=>document.fonts.load(f).catch(()=>{})).concat(carregarFundos(CONFIG.FUNDOS), CONFIG.IMAGENS_COMPROMISSOS ? carregarImagensCompromissos('public/img/compromissos/', CAUSES.map(c => c.id)) : [])).then(()=>onFontsReady());
   await fontsReady;
   const sl = SLOTS;
   const rows = sl.map(s=>{

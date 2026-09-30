@@ -19,7 +19,8 @@ export const CONFIG = {
   // Endereço impresso no fim da imagem. Vazio = usa o endereço em que o app está publicado.
   SITE: '',
   LOGO_RODAPE: base + 'public/img/pdt-branco.png', // logo branco do PDT, para fundos escuros
-  FUNDO_VITOR: base + 'public/img/fundo-vitor.webp',
+  // Aba "Fundo": id -> imagem (9:16). O id 'vitor' é o padrão (laranja da campanha).
+  FUNDOS: { vitor: base + 'public/img/fundo-vitor.webp', azul: base + 'public/img/fundo-azul.webp', colorido: base + 'public/img/fundo-colorido.webp' },
   LOGOS: base + 'logos/',
   // Imagens prontas (ex.: geradas por IA) que substituem o fundo desenhado em código: public/img/compromissos/c01.webp … c12.webp. Ligar só quando os arquivos existirem (evita 12 x 404).
   IMAGENS_COMPROMISSOS: false,

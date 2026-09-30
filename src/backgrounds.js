@@ -6,19 +6,20 @@ function lg(c,x0,y0,x1,y1,stops){const g=c.createLinearGradient(x0,y0,x1,y1);sto
 function rg(c,x,y,r0,r1,stops){const g=c.createRadialGradient(x,y,r0,x,y,r1);stops.forEach((s,i)=>g.addColorStop(i/(stops.length-1),s));return g;}
 function poly(c,cx,cy,r,n,rot=0){c.beginPath();for(let i=0;i<n;i++){const a=rot+i*2*Math.PI/n;c[i?'lineTo':'moveTo'](cx+r*Math.cos(a),cy+r*Math.sin(a));}c.closePath();}
 
-export const PAL = { vitor: ['#FFB068', '#FFFFFF'] };
+export const PAL = { vitor: ['#FFB068', '#FFFFFF'], azul: ['#FFB068', '#FFFFFF'], colorido: ['#FFB068', '#FFFFFF'] };
 // Compromissos: mesma paleta da campanha (laranja + azul-marinho), texto claro sobre painéis escuros.
 for (let n = 1; n <= 12; n++) PAL['c' + String(n).padStart(2, '0')] = ['#FFB068', '#FFFFFF'];
 
-// Fundo da campanha: imagem 1080×1920 carregada uma vez. Antes de carregar (ou se falhar), laranja liso.
-let vitorImg = null;
-export function carregarFundoVitor(url) {
-  return new Promise(res => {
+// Aba "Fundo": imagens de 9:16 (laranja, azul, colorido) carregadas uma vez. Antes de carregar (ou se falhar), cor lisa.
+const fundosImg = {};
+const COR_LISA = { vitor: '#FF6A00', azul: '#0B2A6F', colorido: '#0B2A6F' };
+export function carregarFundos(urls) {
+  return Promise.all(Object.entries(urls).map(([id, url]) => new Promise(res => {
     const i = new Image();
-    i.onload = () => { vitorImg = i; res(true); };
+    i.onload = () => { fundosImg[id] = i; res(true); };
     i.onerror = () => res(false);
     i.src = url;
-  });
+  })));
 }
 
 // Imagens opcionais por compromisso (public/img/compromissos/cNN.webp). Se existirem, substituem o desenho em código.
@@ -106,12 +107,13 @@ function fundoCompromisso(c, W, H, r, id) {
   c.fillStyle = 'rgba(11,42,111,.55)'; c.fillRect(0, H - 14, W, 14);
 }
 
-const DRAW = {
-  vitor(c, W, H) {
-    if (vitorImg) c.drawImage(vitorImg, 0, 0, W, H);
-    else { c.fillStyle = '#FF6A00'; c.fillRect(0, 0, W, H); }
-  }
-};
+const DRAW = {};
+for (const id of Object.keys(COR_LISA)) {
+  DRAW[id] = (c, W, H) => {
+    if (fundosImg[id]) c.drawImage(fundosImg[id], 0, 0, W, H);
+    else { c.fillStyle = COR_LISA[id]; c.fillRect(0, 0, W, H); }
+  };
+}
 for (let n = 1; n <= 12; n++) {
   const id = 'c' + String(n).padStart(2, '0');
   DRAW[id] = (c, W, H, r) => { if (imagensCompromisso[id]) c.drawImage(imagensCompromisso[id], 0, 0, W, H); else fundoCompromisso(c, W, H, r, id); };

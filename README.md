@@ -28,7 +28,7 @@ Para publicar, copie `index.html`, `public/`, `src/` e `data/` para qualquer hos
 | `src/search.js` | Lógica pura: normalização, situação, índice, sugestões, resolução, parâmetros do link |
 | `src/dataStore.js` | Única camada que conhece `data/candidatos.json` e as URLs de foto |
 | `src/slots.js` | Etapa 1: campos, sugestões (ARIA combobox), cartões |
-| `src/bgui.js`, `src/backgrounds.js` | Etapa 2: abas (Campanha, Causa) e fundos em canvas |
+| `src/bgui.js`, `src/backgrounds.js` | Etapa 2: abas (Fundo, Causa) e fundos em canvas |
 | `src/render.js` | Desenho da colinha 1080×1920 (mesma fonte para prévia, PNG, compartilhar e impressão) |
 | `src/actions.js` | Compartilhar, baixar, imprimir, copiar link |
 | `scripts/atualizar-dados.mjs`, `scripts/lib/tse.mjs`, `scripts/lib/zip.mjs` | Importador (zip do TSE, leitor de zip sem dependências) |
@@ -75,7 +75,7 @@ O importador cruza pelo `SQ`, confere os totais entre as duas fontes e registra 
 - Deputado federal fixo em 1200: campo `disabled`, sem botão de limpar, selo "Número fixo desta colinha"; o link e a URL nunca o sobrescrevem. Cartão e imagem omitem o que estiver vazio (sem nome completo, sem selo de situação).
 - Busca por número (prefixo) ou nome (sem acento/caixa), legenda de 2 dígitos para deputados, mesma candidatura não pode ocupar as duas vagas de senador.
 - Rodapé da página e da imagem exportada: logo do PDT e "Iniciativa de Vitor Júnior 1200 (PDT) · CNPJ 68.441.810/0001-17" (`CONFIG.CNPJ`/`ASSINATURA_*` em `src/config.js`).
-- Fundos: **Campanha** (padrão, arte laranja do candidato) e **Causa** = os **12 compromissos** de https://deputadovitorjunior.com.br/12-compromissos (títulos e textos literais em `data/compromissos.json`, lidos em 29/09/2026 pelo workflow de inspeção; espelhados em `src/compromissos.js`, e um teste garante que os dois são idênticos). Frase na imagem: "Compromisso N: Título. Esse é o meu time:". "Estilo de jogo" foi removido; links antigos `?f=rpg` etc. voltam ao fundo Campanha.
+- Fundos: **Fundo** (3 estampas enviadas pela campanha: **Laranja** (padrão), **Azul** e **Colorido**; imagens em `public/img/fundo-*.webp`, originais desktop/mobile em `assets/originais/fundos/`) e **Causa** = os **12 compromissos** de https://deputadovitorjunior.com.br/12-compromissos (títulos e textos literais em `data/compromissos.json`, lidos em 29/09/2026 pelo workflow de inspeção; espelhados em `src/compromissos.js`, e um teste garante que os dois são idênticos). Frase na imagem: "Compromisso N: Título. Esse é o meu time:". "Estilo de jogo" foi removido; links antigos `?f=rpg` etc. voltam ao fundo Laranja.
 - Fundos dos compromissos **desenhados em código** (grade laranja + ícone-herói por tema, sem texto). A geração por IA foi tentada e **não foi possível** (plano gratuito do gerador de imagens recusou a chamada). Para usar imagens próprias/IA: coloque `public/img/compromissos/c01.webp … c12.webp` (1080×1920, sem texto) e ligue `IMAGENS_COMPROMISSOS` em `src/config.js`; elas substituem o desenho automaticamente.
 - Link: `?v=<df>-<de>-<s1>-<s2>-<go>-<pr>&f=<fundo>`. Só números entram no link; `f` é validado. **Sem persistência local**: recarregar sem o `?v=` zera os campos.
 - Nenhum dado pessoal é coletado, armazenado ou enviado; sem métricas nem cookies.
