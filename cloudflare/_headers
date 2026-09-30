@@ -1,0 +1,31 @@
+# Cloudflare Pages: cabeçalhos de segurança e cache. Lido de dist/_headers.
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'
+
+# Página e código: sempre revalidam (os arquivos não têm hash no nome).
+/
+  Cache-Control: public, max-age=0, must-revalidate
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+/src/*
+  Cache-Control: public, max-age=300, must-revalidate
+/public/styles.css
+  Cache-Control: public, max-age=300, must-revalidate
+
+# Base de candidaturas: atualizada por dia; 5 minutos de cache.
+/data/candidatos.json
+  Cache-Control: public, max-age=300, must-revalidate
+
+# Fontes, imagens e fotos (mudam raramente).
+/public/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+/public/img/*
+  Cache-Control: public, max-age=604800
+/public/favicon.ico
+  Cache-Control: public, max-age=604800
+/data/fotos/*
+  Cache-Control: public, max-age=2592000
