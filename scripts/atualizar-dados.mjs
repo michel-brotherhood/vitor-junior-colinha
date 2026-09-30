@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Gera data/candidatos.json (e, com --fotos, data/fotos/) para o RJ + presidente.
 //
-//   npm run atualizar-dados -- --tse-zip [--fotos] [--dry-run]     RECOMENDADO
+//   npm run atualizar-dados -- --tse-zip [--fotos [--refazer-fotos]] [--dry-run]   RECOMENDADO (fotos: DivulgaCandContas/TSE)
 //   npm run atualizar-dados -- --tse-zip --sem-situacao            só TSE (situação fica em branco)
 //   npm run atualizar-dados -- --csv consulta_cand_2026_RJ.csv --csv consulta_cand_2026_BR.csv
 //   npm run atualizar-dados -- --colinha-ai                         só o republicador (terceiro)
@@ -19,7 +19,7 @@
 import { readFile, writeFile, rename, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import {
-  candidatosDeCsv, validar, validarVolume, CHAVES, CONSULTAS_COLINHA_AI, listarColinhaAi, mesclarFixos, juntarSituacao, dadosDeZipTse
+  urlFotoTse, ehJpeg, candidatosDeCsv, validar, validarVolume, CHAVES, CONSULTAS_COLINHA_AI, listarColinhaAi, mesclarFixos, juntarSituacao, dadosDeZipTse
 } from './lib/tse.mjs';
 import { listarZip, lerEntrada } from './lib/zip.mjs';
 
@@ -84,24 +84,31 @@ async function porTseZip() {
 }
 
 /* ---------------- fotos ---------------- */
-// Fotos públicas de candidatura, copiadas para data/fotos/<SQ>.jpg (o canvas exige mesma origem). Só baixa o que falta.
+// Fotos oficiais do TSE (DivulgaCandContas), copiadas para data/fotos/<SQ>.jpg (o canvas exige mesma origem).
+// Padrão: só baixa o que falta. Com --refazer-fotos baixa tudo de novo do TSE; a foto antiga só é trocada se a nova for um JPEG válido.
 async function baixarFotos(dados) {
   await mkdir(new URL('../data/fotos/', import.meta.url), { recursive: true });
-  const fila = CHAVES.flatMap(k => dados[k].candidatos).filter(c => !c.foto && !existsSync(new URL(`../data/fotos/${c.id}.jpg`, import.meta.url)));
-  let ok = 0, falha = 0, i = 0;
+  const refazer = tem('refazer-fotos');
+  const todos = CHAVES.flatMap(k => dados[k].candidatos.map(c => ({ c, k })));
+  const fila = todos.filter(({ c }) => !c.foto && (refazer || !existsSync(new URL(`../data/fotos/${c.id}.jpg`, import.meta.url))));
+  let ok = 0, falha = 0, i = 0; const semFoto = [];
   const trabalhador = async () => {
     while (i < fila.length) {
-      const c = fila[i++];
+      const { c, k } = fila[i++];
       try {
-        const r = await get(`https://assets.colinha.ai/candidatos/fotos/${ANO}/${c.id}.jpeg`, { signal: AbortSignal.timeout(30000) });
-        const b = Buffer.from(await r.arrayBuffer());
-        if (b.length < 500) throw new Error('imagem pequena demais');
+        const b = await comRetry(async () => {
+          const r = await get(urlFotoTse(c.id, k), { signal: AbortSignal.timeout(30000) });
+          const buf = Buffer.from(await r.arrayBuffer());
+          if (!ehJpeg(buf)) throw new Error('resposta não é JPEG');
+          return buf;
+        }, 2);
         await writeFile(new URL(`../data/fotos/${c.id}.jpg`, import.meta.url), b); ok++;
-      } catch { falha++; }
+      } catch { falha++; semFoto.push(c.id); }
     }
   };
   await Promise.all(Array.from({ length: 6 }, trabalhador));
-  console.log(`Fotos: ${ok} baixadas, ${falha} indisponíveis (o app usa silhueta), ${CHAVES.flatMap(k => dados[k].candidatos).length - fila.length} já existentes/locais.`);
+  console.log(`Fotos (TSE): ${ok} baixadas, ${falha} indisponíveis (mantém a foto local se existir; senão o app usa silhueta), ${todos.length - fila.length} já existentes/locais.`);
+  if (semFoto.length) console.log('Sem foto no TSE:', semFoto.slice(0, 30).join(', '), semFoto.length > 30 ? '…' : '');
 }
 
 /* ---------------- principal ---------------- */

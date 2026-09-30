@@ -117,6 +117,12 @@ export function mesclarFixos(dados, fixos) {
 
 /* ---------- validação de volume e junção de situação ---------- */
 // Piso por lista: protege contra arquivo truncado (o RJ tem 793 dep. federais, 1188 estaduais, 17 senadores, 9 governadores, 14 presidentes).
+// Foto individual no DivulgaCandContas (fonte oficial). `chave` = 'UF/cargo' (ex.: 'RJ/6', 'BR/1'); a UE é a parte antes da barra.
+export const ELEICAO_TSE = 20322002026; // "Eleição Geral Federal 2026", confirmado em /rest/v1/eleicao/ordinarias
+export const urlFotoTse = (id, chave, eleicao = ELEICAO_TSE) => `https://divulgacandcontas.tse.jus.br/divulga/rest/arquivo/img/${eleicao}/${id}/${String(chave).split('/')[0]}`;
+// Só aceita o que é de fato um JPEG de tamanho plausível (o TSE às vezes devolve HTML de erro com status 200).
+export const ehJpeg = b => b && b.length >= 500 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff;
+
 export const MINIMOS = { 'RJ/7': 300, 'RJ/6': 200, 'RJ/5': 5, 'RJ/3': 3, 'BR/1': 5 };
 export function validarVolume(dados) {
   return CHAVES.filter(k => (dados[k]?.candidatos?.length || 0) < MINIMOS[k]).map(k => `${k}: só ${dados[k]?.candidatos?.length || 0} registros (mínimo esperado ${MINIMOS[k]})`);

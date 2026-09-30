@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseCsv, candidatosDeCsv, validar } from '../scripts/lib/tse.mjs';
+import { parseCsv, candidatosDeCsv, validar, urlFotoTse, ehJpeg } from '../scripts/lib/tse.mjs';
 
 // CSV SINTÉTICO no layout consulta_cand (colunas reduzidas). Nomes fictícios.
 const csv = [
@@ -125,5 +125,19 @@ describe('situação vinda de outra fonte (cruzada por SQ)', () => {
     const st = juntarSituacao(d, [{ id: 1, descricaoSituacao: 'DEFERIDO' }, { id: 2, descricaoSituacao: 'INDEFERIDO' }, { id: 99, descricaoSituacao: 'DEFERIDO' }]);
     expect(d['RJ/6'].candidatos.map(c => c.descricaoSituacao)).toEqual(['DEFERIDO', 'JÁ VEIO', '']);
     expect(st).toEqual({ juntados: 1, semSituacao: 1, soNaFonteExtra: 1 });
+  });
+});
+
+describe('foto direto do TSE', () => {
+  it('monta a URL do DivulgaCandContas com a UE certa', () => {
+    expect(urlFotoTse(190002554324, 'RJ/6')).toBe('https://divulgacandcontas.tse.jus.br/divulga/rest/arquivo/img/20322002026/190002554324/RJ');
+    expect(urlFotoTse('190000000001', 'BR/1')).toBe('https://divulgacandcontas.tse.jus.br/divulga/rest/arquivo/img/20322002026/190000000001/BR');
+  });
+  it('só aceita JPEG de verdade (HTML de erro com status 200 é rejeitado)', () => {
+    const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(600)]);
+    expect(ehJpeg(jpeg)).toBe(true);
+    expect(ehJpeg(Buffer.from('<!DOCTYPE html>'.padEnd(800, ' ')))).toBe(false);
+    expect(ehJpeg(Buffer.from([0xff, 0xd8, 0xff]))).toBe(false); // pequeno demais
+    expect(ehJpeg(null)).toBeFalsy();
   });
 });
