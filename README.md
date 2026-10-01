@@ -99,6 +99,8 @@ O importador cruza pelo `SQ`, confere os totais entre as duas fontes e registra 
 
 - Três faixas: coluna única até 719 px (prévia ao final, barra fixa "Ver prévia / Compartilhar" enquanto ela não está na tela, link "Voltar aos campos"), duas colunas com prévia de 300 px de 720 a 919 px e prévia de 380 px a partir de 920 px.
 - A altura da prévia acompanha a janela (`--acoes` em `public/styles.css`), então os quatro botões cabem em notebooks de 720 px.
+- Topo: logo "Vitor Júnior · Deputado Federal · 1200" (`public/img/logo-vitor-1200.webp`). Rodapé: "Desenvolvido por" + logo, com link para conectarepolitica.com.br (`public/img/logo-conecta.webp`). Originais em `assets/originais/logos/`.
+- Fundo Colorido: véu escuro na estampa e painéis mais opacos (`PAL.colorido[2]`), para os textos ficarem tão legíveis quanto no Azul (nome 15:1, rótulos 9:1).
 - Contraste da imagem exportada: cada texto é medido pixel a pixel contra o que está atrás dele nos 15 fundos (teste e2e, mínimo 4,5:1). Linhas vazias usam o mesmo vidro das preenchidas; o selo de candidatura irregular é `#FF93A0`; "Esse é o meu time:" nunca é partido entre linhas.
 - Prévia maior: no celular em pé ela ocupa a largura do quadro (336 px a 390 px de tela, antes 289); em notebooks baixos (altura ≤ 800 px) o aviso repetido do rodapé da imagem some e a prévia cresce (258×458 a 1280×720). A barra fixa só se esconde quando o botão Compartilhar do quadro já está inteiro na tela. Nenhum texto da página fica abaixo de 14 px.
 - Celular deitado (altura < 500 px): a barra fixa com Compartilhar fica sempre visível. A aba (Fundo/Causa) que contém o fundo escolhido ganha um ponto.

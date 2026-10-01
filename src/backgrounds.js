@@ -6,7 +6,7 @@ function lg(c,x0,y0,x1,y1,stops){const g=c.createLinearGradient(x0,y0,x1,y1);sto
 function rg(c,x,y,r0,r1,stops){const g=c.createRadialGradient(x,y,r0,x,y,r1);stops.forEach((s,i)=>g.addColorStop(i/(stops.length-1),s));return g;}
 function poly(c,cx,cy,r,n,rot=0){c.beginPath();for(let i=0;i<n;i++){const a=rot+i*2*Math.PI/n;c[i?'lineTo':'moveTo'](cx+r*Math.cos(a),cy+r*Math.sin(a));}c.closePath();}
 
-export const PAL = { vitor: ['#FFB068', '#FFFFFF'], azul: ['#FFB068', '#FFFFFF'], colorido: ['#FFB068', '#FFFFFF'] };
+export const PAL = { vitor: ['#FFB068', '#FFFFFF'], azul: ['#FFB068', '#FFFFFF'], colorido: ['#FFB068', '#FFFFFF', .2] };
 // Compromissos: mesma paleta da campanha (laranja + azul-marinho), texto claro sobre painéis escuros.
 for (let n = 1; n <= 12; n++) PAL['c' + String(n).padStart(2, '0')] = ['#FFB068', '#FFFFFF'];
 
@@ -112,6 +112,8 @@ for (const id of Object.keys(COR_LISA)) {
   DRAW[id] = (c, W, H) => {
     if (fundosImg[id]) c.drawImage(fundosImg[id], 0, 0, W, H);
     else { c.fillStyle = COR_LISA[id]; c.fillRect(0, 0, W, H); }
+    // a estampa colorida tem branco puro e laranja saturado: um véu escuro tira o ruído de trás dos painéis
+    if (id === 'colorido') { c.fillStyle = 'rgba(8,8,30,.3)'; c.fillRect(0, 0, W, H); }
   };
 }
 for (let n = 1; n <= 12; n++) {
