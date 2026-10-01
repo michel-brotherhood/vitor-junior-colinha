@@ -478,11 +478,12 @@ test.describe('auditoria: responsividade e usabilidade', () => {
     test(`notebook ${w}×${h}: as 4 ações ficam dentro da janela em qualquer ponto da rolagem`, async ({ page }) => {
       await page.setViewportSize({ width: w, height: h });
       await withFixture(page); await page.goto('/'); await ready(page);
-      for (const y of [0, 300, 700, 1100, 1500]) {
+      // a prévia só "gruda" depois que a rolagem passa da posição natural dela (abaixo do cabeçalho com a logo e do título)
+      const gruda = Math.ceil(await page.locator('.preview').evaluate(e => e.getBoundingClientRect().top + scrollY)) - 16;
+      expect(gruda).toBeLessThan(450);
+      for (const y of [gruda + 20, 700, 1100, 1500]) {
         await page.evaluate(y => scrollTo(0, y), y);
         await page.waitForTimeout(80);
-        // no topo da página a prévia começa abaixo do cabeçalho; depois de rolar, tudo deve caber
-        if (y === 0) continue;
         for (const s of ['#share', '#dl', '#print', '#link']) expect(await inViewport(page, s), `${s} fora da janela em scrollY=${y}`).toBe(true);
       }
     });
@@ -719,5 +720,58 @@ test.describe('auditoria 3: texto, prévia maior, fontes e barra fixa', () => {
       const s = await page.evaluate(() => { const r = document.querySelector('#share').getBoundingClientRect(); return { dentro: r.top >= 0 && r.bottom <= innerHeight, off: document.querySelector('#dock').hasAttribute('data-off') }; });
       if (s.off) expect(s.dentro, `barra oculta com o botão fora da tela em y=${y}`).toBe(true);
     }
+  });
+});
+
+test.describe('auditoria 4: logos e fundo Colorido', () => {
+  test('topo mostra a logo do candidato e o rodapé tem o crédito de desenvolvimento com link', async ({ page }) => {
+    await page.goto('/');
+    const logo = page.locator('header.top img.logo-cand');
+    await expect(logo).toBeVisible();
+    await expect(logo).toHaveAttribute('alt', 'Vitor Júnior, deputado federal, 1200');
+    expect(await logo.evaluate(i => i.complete && i.naturalWidth > 0)).toBe(true);
+    const dev = page.locator('footer a.dev');
+    await expect(dev).toHaveAttribute('href', 'https://conectarepolitica.com.br');
+    await expect(dev).toHaveAttribute('target', '_blank');
+    await expect(dev).toHaveAttribute('rel', /noopener/);
+    await expect(dev).toContainText('Desenvolvido por');
+    expect(await dev.locator('img').evaluate(i => i.complete && i.naturalWidth > 0)).toBe(true);
+    expect((await dev.boundingBox()).height).toBeGreaterThanOrEqual(44);
+    for (const w of [320, 390, 768, 1280]) {
+      await page.setViewportSize({ width: w, height: 800 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth), `overflow em ${w}`).toBeLessThanOrEqual(0);
+    }
+  });
+
+  test('fundo Colorido com a colinha cheia: texto ≥ 7:1 e rótulos ≥ 6:1 atrás dos painéis', async ({ page }) => {
+    // mesma medição pixel a pixel da auditoria 2, com limites mais altos só para este fundo
+    await page.addInitScript(() => {
+      const orig = CanvasRenderingContext2D.prototype.fillText; window.__rec = null;
+      CanvasRenderingContext2D.prototype.fillText = function (t, x, y, mw) {
+        if (window.__rec && this.canvas.id === 'out') { window.__rec.push({ t: String(t), font: this.font, fill: String(this.fillStyle), a: this.globalAlpha, x, y, w: this.measureText(String(t)).width, al: this.textAlign }); return; }
+        return orig.call(this, t, x, y, mw);
+      };
+    });
+    await page.goto('/?f=colorido&v=1200-45200-555-131-55-22'); await page.waitForTimeout(1200);
+    await page.evaluate(() => { window.__rec = []; document.querySelector('#bgs .bg[aria-pressed=true]').click(); });
+    await page.waitForTimeout(900);
+    const r = await page.evaluate(() => {
+      const c = document.querySelector('#out').getContext('2d');
+      const lum = ([r, g, b]) => { const f = v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }; return .2126 * f(r) + .7152 * f(g) + .0722 * f(b); };
+      const k = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+      const cor = s => { k.clearRect(0, 0, 1, 1); k.fillStyle = '#000'; k.fillStyle = s; k.fillRect(0, 0, 1, 1); return [...k.getImageData(0, 0, 1, 1).data.slice(0, 3)]; };
+      return window.__rec.map(r => {
+        const fs = +/(\d+(?:\.\d+)?)px/.exec(r.font)[1]; const m = /rgba\(([^)]*)\)/.exec(r.fill); const a = r.a * (m ? +m[1].split(',')[3] : 1); const fg = cor(r.fill);
+        const x0 = Math.max(0, Math.round(r.al === 'center' ? r.x - r.w / 2 : r.al === 'right' ? r.x - r.w : r.x)), y0 = Math.max(0, Math.round(r.y - fs * .72));
+        const d = c.getImageData(x0, y0, Math.max(2, Math.min(Math.round(r.w), 1080 - x0)), Math.round(fs * .8)).data; const cr = [];
+        for (let i = 0; i < d.length; i += 12) { const bg = [d[i], d[i + 1], d[i + 2]]; const L1 = lum(fg.map((v, j) => a * v + (1 - a) * bg[j])), L2 = lum(bg); cr.push((Math.max(L1, L2) + .05) / (Math.min(L1, L2) + .05)); }
+        cr.sort((p, q) => p - q); return { t: r.t, fill: r.fill, fs, p5: cr[Math.floor(cr.length * .05)] };
+      });
+    });
+    expect(r.length).toBeGreaterThan(30);
+    const rotulos = r.filter(x => x.fill.toLowerCase() === '#ffb068' && x.fs <= 30);
+    expect(rotulos.length).toBeGreaterThan(4);
+    expect(rotulos.filter(x => x.p5 < 6).map(x => `${x.t} ${x.p5.toFixed(2)}`)).toEqual([]);
+    expect(r.filter(x => x.p5 < 7).map(x => `${x.t} ${x.p5.toFixed(2)}`)).toEqual([]);
   });
 });

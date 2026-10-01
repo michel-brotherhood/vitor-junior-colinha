@@ -57,7 +57,7 @@ export async function draw(token){
   });
   const [imgs, logoRodape] = await Promise.all([Promise.all(rows.map(r=>Promise.all([loadImg(r.photo),loadImg(r.logo)]))), loadImg(CONFIG.LOGO_RODAPE)]);
   if(token!==renderToken) return;
-  const cv=$('#out'), c=cv.getContext('2d'); const W=1080,H=1920,M=52; const [acc,acc2]=PAL[S.bg];
+  const cv=$('#out'), c=cv.getContext('2d'); const W=1080,H=1920,M=52; const [acc,acc2,vidroExtra=0]=PAL[S.bg]; // vidroExtra: opacidade a mais nos painéis (fundos muito estampados)
   c.clearRect(0,0,W,H); drawBG(c,S.bg,W,H);
   // vidro fosco: cópia borrada do fundo, usada dentro dos painéis
   const blur=document.createElement('canvas'); blur.width=W/4; blur.height=H/4;
@@ -76,7 +76,7 @@ export async function draw(token){
     lines=quebra(hi);
   }
   const lh=fs*1.0; const hh=pad+30+22+lines.length*lh+18+36+pad-6;
-  glass(hx,M,hw,hh,22,.62);
+  glass(hx,M,hw,hh,22,.62+vidroExtra);
   c.fillStyle=acc;c.font='400 28px CutePixel,monospace';c.fillText('COLINHA · ELEIÇÕES 2026',hx+pad,M+pad+22);
   c.fillStyle='#F7F7F7';c.font=`700 ${fs}px Rajdhani,sans-serif`;
   lines.forEach((l,i)=>c.fillText(l,hx+pad,M+pad+30+22+lh*(i+1)-fs*.18));
@@ -89,7 +89,7 @@ export async function draw(token){
   const rh=Math.min(n===1?300:200,(avail-gap*(n-1))/n); const y0 = n===1? top+(avail-rh)/2 : top;
   rows.forEach((r,i)=>{
     const y=y0+i*(rh+gap), x=M, w=W-2*M, p=16;
-    glass(x,y,w,rh,18,.66);
+    glass(x,y,w,rh,18,.66+vidroExtra);
     // foto
     const ph=rh-2*p, pw=Math.round(ph*.75), px=x+p, py=y+p;
     c.save();rr(c,px,py,pw,ph,12);c.clip();
@@ -118,7 +118,7 @@ export async function draw(token){
   });
 
   // rodapé
-  glass(M,footY,W-2*M,footH,18,.7);
+  glass(M,footY,W-2*M,footH,18,.7+vidroExtra);
   const fx=M+30;
   // logo do partido à direita; todo texto do rodapé fica à esquerda dele, com folga
   let logoW=0;
